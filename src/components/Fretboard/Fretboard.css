@@ -1,0 +1,203 @@
+.fretboard-container {
+  width: 100%;
+  overflow-x: auto;
+  padding: 20px 0;
+}
+
+.fretboard {
+  position: relative;
+  background: linear-gradient(to bottom, #8B4513 0%, #654321 100%);
+  border-radius: 4px;
+  padding: 10px;
+  min-width: 900px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* Nut (the white bar at fret 0) */
+.nut {
+  position: absolute;
+  left: 70px;
+  top: 10px;
+  bottom: 10px;
+  width: 8px;
+  background: linear-gradient(to right, #f5f5dc, #fffef0);
+  border-radius: 2px;
+  z-index: 5;
+}
+
+/* Fret markers (dots) */
+.fret-markers {
+  position: absolute;
+  bottom: -25px;
+  left: 78px;
+  right: 10px;
+  display: flex;
+  pointer-events: none;
+}
+
+.fret-marker-slot {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.fret-marker {
+  display: flex;
+  gap: 8px;
+}
+
+.marker-dot {
+  width: 8px;
+  height: 8px;
+  background: #666;
+  border-radius: 50%;
+}
+
+/* Fret numbers */
+.fret-numbers {
+  display: flex;
+  margin-left: 70px;
+  margin-bottom: 5px;
+}
+
+.fret-number {
+  flex: 1;
+  text-align: center;
+  font-size: 11px;
+  color: #ccc;
+  font-weight: 500;
+}
+
+/* Strings container */
+.strings-container {
+  position: relative;
+  z-index: 2;
+}
+
+.string-row {
+  display: flex;
+  align-items: center;
+  height: 28px;
+}
+
+.string-label {
+  width: 75px;
+  text-align: center;
+  font-weight: bold;
+  color: #ffd700;
+  font-size: 14px;
+}
+
+/* Individual fret */
+.fret {
+  flex: 1;
+  height: 100%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.fret:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Open string fret - notes go to the left of the nut */
+.fret.open {
+  max-width: 40px;
+  justify-content: flex-start;
+  padding-left: 4px;
+  margin-left: -48px;
+}
+
+.fret.open .string-wire {
+  display: none;
+}
+
+/* String wire */
+.string-wire {
+  position: absolute;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to bottom, #d4af37, #b8860b, #d4af37);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Note indicator */
+.note-indicator {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4a90d9 0%, #357abd 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.note-indicator:hover {
+  transform: scale(1.15);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4);
+}
+
+.note-indicator.root {
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+  width: 28px;
+  height: 28px;
+}
+
+.note-text {
+  color: white;
+  font-size: 10px;
+  font-weight: bold;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+}
+
+/* Fret wires */
+.fret-wires {
+  position: absolute;
+  top: 30px;
+  bottom: 10px;
+  left: 78px;
+  right: 10px;
+  display: flex;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.fret-wire {
+  flex: 1;
+  border-right: 3px solid #c0c0c0;
+  box-shadow: 1px 0 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .fretboard {
+    min-width: 700px;
+  }
+
+  .string-label {
+    width: 40px;
+    font-size: 12px;
+  }
+
+  .note-indicator {
+    width: 20px;
+    height: 20px;
+  }
+
+  .note-indicator.root {
+    width: 24px;
+    height: 24px;
+  }
+
+  .note-text {
+    font-size: 9px;
+  }
+}

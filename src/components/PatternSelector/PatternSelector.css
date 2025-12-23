@@ -1,0 +1,149 @@
+.pattern-selector {
+  background: #2a2a2a;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.pattern-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #444;
+  padding-bottom: 15px;
+}
+
+.pattern-tab {
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  background: #333;
+  color: #aaa;
+  transition: all 0.2s;
+}
+
+.pattern-tab:hover {
+  background: #444;
+  color: #fff;
+}
+
+.pattern-tab.active {
+  background: linear-gradient(135deg, #4a90d9 0%, #357abd 100%);
+  color: white;
+}
+
+.pattern-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+.pattern-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.pattern-list::-webkit-scrollbar-track {
+  background: #333;
+  border-radius: 3px;
+}
+
+.pattern-list::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 3px;
+}
+
+.pattern-list::-webkit-scrollbar-thumb:hover {
+  background: #666;
+}
+
+.pattern-category {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.category-title {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #888;
+  margin: 0;
+  padding-bottom: 5px;
+  border-bottom: 1px solid #3a3a3a;
+}
+
+.pattern-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pattern-item {
+  padding: 8px 14px;
+  font-size: 13px;
+  border: 1px solid #444;
+  border-radius: 20px;
+  cursor: pointer;
+  background: transparent;
+  color: #ccc;
+  transition: all 0.2s;
+}
+
+.pattern-item:hover {
+  border-color: #666;
+  color: #fff;
+  background: #3a3a3a;
+}
+
+.pattern-item.active {
+  border-color: #4a90d9;
+  background: rgba(74, 144, 217, 0.2);
+  color: #4a90d9;
+}
+
+.pattern-info {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #444;
+}
+
+.pattern-info h3 {
+  margin: 0 0 10px 0;
+  font-size: 18px;
+  color: #fff;
+}
+
+.pattern-description {
+  color: #aaa;
+  font-size: 14px;
+  margin: 0 0 10px 0;
+  line-height: 1.5;
+}
+
+.pattern-intervals {
+  color: #888;
+  font-size: 13px;
+  font-family: monospace;
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .pattern-tabs {
+    flex-wrap: wrap;
+  }
+
+  .pattern-tab {
+    flex: 1;
+    text-align: center;
+    min-width: 100px;
+  }
+
+  .pattern-list {
+    max-height: 200px;
+  }
+}
