@@ -1,27 +1,23 @@
 import {
-  STANDARD_TUNING,
-  STANDARD_TUNING_OCTAVES,
   getNoteAtFret,
   getOctaveAtFret,
-  getNoteIndex,
   isNoteInPattern,
   getFrequency
 } from './musicTheory';
+import { getInstrument, DEFAULT_INSTRUMENT } from '../data/instruments';
 
-// Number of frets to display
-export const NUM_FRETS = 15;
-export const NUM_STRINGS = 6;
-
-// Generate fretboard data structure
-export function generateFretboard() {
+// Generate fretboard data structure for a given instrument
+export function generateFretboard(instrumentId = DEFAULT_INSTRUMENT) {
+  const instrument = getInstrument(instrumentId);
+  const { tuning, tuningOctaves, frets, strings } = instrument;
   const fretboard = [];
 
-  for (let string = 0; string < NUM_STRINGS; string++) {
+  for (let string = 0; string < strings; string++) {
     const stringData = [];
-    const openNote = STANDARD_TUNING[string];
-    const openOctave = STANDARD_TUNING_OCTAVES[string];
+    const openNote = tuning[string];
+    const openOctave = tuningOctaves[string];
 
-    for (let fret = 0; fret <= NUM_FRETS; fret++) {
+    for (let fret = 0; fret <= frets; fret++) {
       const note = getNoteAtFret(openNote, fret);
       const octave = getOctaveAtFret(openOctave, openNote, fret);
       const frequency = getFrequency(note, octave);
@@ -69,8 +65,11 @@ export function getPatternInRange(rootNote, intervals, fretboard, startFret, end
 
 // Find the lowest root note position on the fretboard
 export function findLowestRoot(rootNote, fretboard) {
-  for (let string = NUM_STRINGS - 1; string >= 0; string--) {
-    for (let fret = 0; fret <= NUM_FRETS; fret++) {
+  const numStrings = fretboard.length;
+  const numFrets = fretboard[0]?.length - 1 || 0;
+
+  for (let string = numStrings - 1; string >= 0; string--) {
+    for (let fret = 0; fret <= numFrets; fret++) {
       if (fretboard[string][fret].note === rootNote) {
         return { string, fret };
       }
@@ -81,9 +80,10 @@ export function findLowestRoot(rootNote, fretboard) {
 
 // Get suggested position range based on root note
 export function getSuggestedRange(rootNote, fretboard) {
+  const numFrets = fretboard[0]?.length - 1 || 0;
   const lowestRoot = findLowestRoot(rootNote, fretboard);
   const startFret = Math.max(0, lowestRoot.fret - 2);
-  const endFret = Math.min(NUM_FRETS, lowestRoot.fret + 4);
+  const endFret = Math.min(numFrets, lowestRoot.fret + 4);
   return { startFret, endFret };
 }
 

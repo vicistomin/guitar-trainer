@@ -1,10 +1,11 @@
 import { useMemo } from 'react';
-import { generateFretboard, NUM_FRETS, NUM_STRINGS } from '../../utils/fretboardUtils';
-// NUM_STRINGS used for reversing string display order
-import { isNoteInPattern, getInterval, STANDARD_TUNING } from '../../utils/musicTheory';
+import { generateFretboard } from '../../utils/fretboardUtils';
+import { getInstrument } from '../../data/instruments';
+import { isNoteInPattern, getInterval } from '../../utils/musicTheory';
 import './Fretboard.css';
 
 export function Fretboard({
+  instrument = 'guitar',
   rootNote,
   intervals,
   onNoteClick,
@@ -12,11 +13,10 @@ export function Fretboard({
   showIntervals = false,
   highlightRoot = true,
 }) {
-  const fretboard = useMemo(() => generateFretboard(), []);
+  const instrumentConfig = getInstrument(instrument);
+  const { tuning, frets: numFrets, strings: numStrings, fretMarkers, doubleFretMarkers } = instrumentConfig;
 
-  // Fret markers (standard positions)
-  const fretMarkers = [3, 5, 7, 9, 12, 15];
-  const doubleFretMarkers = [12];
+  const fretboard = useMemo(() => generateFretboard(instrument), [instrument]);
 
   const handleNoteClick = (noteData) => {
     if (onNoteClick) {
@@ -42,13 +42,13 @@ export function Fretboard({
 
   return (
     <div className="fretboard-container">
-      <div className="fretboard">
+      <div className={`fretboard fretboard-${instrument}`}>
         {/* Nut */}
         <div className="nut" />
 
         {/* Fret markers */}
         <div className="fret-markers">
-          {Array.from({ length: NUM_FRETS }, (_, i) => i + 1).map((fret) => (
+          {Array.from({ length: numFrets }, (_, i) => i + 1).map((fret) => (
             <div key={fret} className="fret-marker-slot">
               {fretMarkers.includes(fret) && (
                 <div className={`fret-marker ${doubleFretMarkers.includes(fret) ? 'double' : ''}`}>
@@ -62,21 +62,21 @@ export function Fretboard({
 
         {/* Fret numbers */}
         <div className="fret-numbers">
-          {Array.from({ length: NUM_FRETS }, (_, i) => i + 1).map((fret) => (
+          {Array.from({ length: numFrets }, (_, i) => i + 1).map((fret) => (
             <div key={fret} className="fret-number">
               {fret}
             </div>
           ))}
         </div>
 
-        {/* Strings and frets - reversed so low E is at bottom */}
+        {/* Strings and frets - reversed so lowest string is at bottom */}
         <div className="strings-container">
           {[...fretboard].reverse().map((string, displayIndex) => {
-            const stringIndex = NUM_STRINGS - 1 - displayIndex; // Original string index for thickness
+            const stringIndex = numStrings - 1 - displayIndex;
             return (
               <div key={stringIndex} className="string-row">
                 {/* Open string label */}
-                <div className="string-label">{STANDARD_TUNING[stringIndex]}</div>
+                <div className="string-label">{tuning[stringIndex]}</div>
 
                 {/* Frets */}
                 {string.map((fretData, fretIndex) => {
@@ -89,11 +89,11 @@ export function Fretboard({
                       className={`fret ${fretIndex === 0 ? 'open' : ''}`}
                       onClick={() => handleNoteClick(fretData)}
                     >
-                      {/* String wire - thicker strings at bottom (low E) */}
+                      {/* String wire - thicker strings at bottom */}
                       <div
                         className="string-wire"
                         style={{
-                          height: `${1 + (NUM_STRINGS - 1 - displayIndex) * 0.3}px`,
+                          height: `${1 + (numStrings - 1 - displayIndex) * 0.4}px`,
                         }}
                       />
 
@@ -118,7 +118,7 @@ export function Fretboard({
 
         {/* Fret wires */}
         <div className="fret-wires">
-          {Array.from({ length: NUM_FRETS }, (_, i) => (
+          {Array.from({ length: numFrets }, (_, i) => (
             <div key={i} className="fret-wire" />
           ))}
         </div>

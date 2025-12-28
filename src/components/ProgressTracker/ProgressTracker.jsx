@@ -10,6 +10,8 @@ export function ProgressTracker({
   getStats,
   formatTime,
   onResetProgress,
+  autoStartEnabled,
+  onToggleAutoStart,
 }) {
   const [currentTime, setCurrentTime] = useState(0);
   const [showConfirmReset, setShowConfirmReset] = useState(false);
@@ -107,6 +109,18 @@ export function ProgressTracker({
           <span>Sessions:</span>
           <span className="weekly-value">{stats.recentSessions.length}</span>
         </div>
+      </div>
+
+      {/* Settings */}
+      <div className="settings-section">
+        <label className="auto-start-toggle">
+          <input
+            type="checkbox"
+            checked={autoStartEnabled}
+            onChange={onToggleAutoStart}
+          />
+          <span>Auto-start session when tab is active</span>
+        </label>
       </div>
 
       {/* Reset button */}

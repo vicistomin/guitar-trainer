@@ -137,11 +137,49 @@
 
 @media (max-width: 768px) {
   .controls {
-    gap: 15px;
+    gap: 12px;
+    padding: 15px;
+  }
+
+  .control-group {
+    gap: 6px;
+  }
+
+  .control-group label {
+    font-size: 12px;
+  }
+
+  .control-group select {
+    padding: 12px 15px;
+    font-size: 16px;
+    min-width: 90px;
+    /* Prevent iOS zoom */
+    font-size: 16px;
   }
 
   .control-group input[type="range"] {
-    width: 120px;
+    width: 100px;
+    height: 8px;
+  }
+
+  .control-group input[type="range"]::-webkit-slider-thumb {
+    width: 22px;
+    height: 22px;
+  }
+
+  .checkbox-group {
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .checkbox-group label {
+    font-size: 13px;
+    padding: 8px 0;
+  }
+
+  .checkbox-group input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
   }
 
   .button-group {
@@ -152,5 +190,39 @@
 
   .btn {
     flex: 1;
+    padding: 14px 20px;
+    font-size: 15px;
+    min-height: 48px;
+  }
+}
+
+/* Small mobile */
+@media (max-width: 480px) {
+  .controls {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .control-group select {
+    padding: 10px 12px;
+    min-width: 80px;
+  }
+
+  .control-group input[type="range"] {
+    width: 80px;
+  }
+
+  .checkbox-group {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .button-group {
+    gap: 8px;
+  }
+
+  .btn {
+    padding: 12px 16px;
+    font-size: 14px;
   }
 }

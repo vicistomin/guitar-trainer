@@ -1,6 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 const STORAGE_KEY = 'guitar-trainer-progress';
+const SETTINGS_KEY = 'guitar-trainer-settings';
+const AUTO_START_DELAY = 3000; // 3 seconds of active tab time before auto-start
 
 const initialProgress = {
   sessions: [],
@@ -8,6 +10,10 @@ const initialProgress = {
   patternsLearned: [],
   lastPracticeDate: null,
   streakDays: 0,
+};
+
+const defaultSettings = {
+  autoStartEnabled: true,
 };
 
 export function useProgress() {
@@ -20,8 +26,19 @@ export function useProgress() {
     }
   });
 
+  const [settings, setSettings] = useState(() => {
+    try {
+      const stored = localStorage.getItem(SETTINGS_KEY);
+      return stored ? { ...defaultSettings, ...JSON.parse(stored) } : defaultSettings;
+    } catch {
+      return defaultSettings;
+    }
+  });
+
   const [sessionStart, setSessionStart] = useState(null);
   const [currentSessionPatterns, setCurrentSessionPatterns] = useState([]);
+  const autoStartTimerRef = useRef(null);
+  const hasAutoStartedRef = useRef(false);
 
   // Save to localStorage whenever progress changes
   useEffect(() => {
@@ -32,11 +49,68 @@ export function useProgress() {
     }
   }, [progress]);
 
+  // Save settings to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    } catch (e) {
+      console.error('Failed to save settings:', e);
+    }
+  }, [settings]);
+
   // Start a practice session
   const startSession = useCallback(() => {
     setSessionStart(Date.now());
     setCurrentSessionPatterns([]);
+    hasAutoStartedRef.current = true;
   }, []);
+
+  // Toggle auto-start setting
+  const toggleAutoStart = useCallback(() => {
+    setSettings(prev => ({ ...prev, autoStartEnabled: !prev.autoStartEnabled }));
+  }, []);
+
+  // Auto-start session based on tab visibility
+  useEffect(() => {
+    if (!settings.autoStartEnabled) return;
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // Tab became active - start timer for auto-start
+        if (!sessionStart && !hasAutoStartedRef.current) {
+          autoStartTimerRef.current = setTimeout(() => {
+            if (!sessionStart && document.visibilityState === 'visible') {
+              startSession();
+            }
+          }, AUTO_START_DELAY);
+        }
+      } else {
+        // Tab became hidden - clear auto-start timer
+        if (autoStartTimerRef.current) {
+          clearTimeout(autoStartTimerRef.current);
+          autoStartTimerRef.current = null;
+        }
+      }
+    };
+
+    // Check initial state and start timer if visible
+    if (document.visibilityState === 'visible' && !sessionStart && !hasAutoStartedRef.current) {
+      autoStartTimerRef.current = setTimeout(() => {
+        if (!sessionStart && document.visibilityState === 'visible') {
+          startSession();
+        }
+      }, AUTO_START_DELAY);
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (autoStartTimerRef.current) {
+        clearTimeout(autoStartTimerRef.current);
+      }
+    };
+  }, [settings.autoStartEnabled, sessionStart, startSession]);
 
   // Track pattern practice
   const trackPattern = useCallback((patternName, rootNote) => {
@@ -156,5 +230,7 @@ export function useProgress() {
     formatTime,
     resetProgress,
     isSessionActive: sessionStart !== null,
+    autoStartEnabled: settings.autoStartEnabled,
+    toggleAutoStart,
   };
 }

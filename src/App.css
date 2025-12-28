@@ -105,24 +105,65 @@ body {
 
 @media (max-width: 768px) {
   .app {
-    padding: 15px;
+    padding: 10px;
+  }
+
+  .app-header {
+    padding: 20px 15px;
+    margin-bottom: 20px;
   }
 
   .app-header h1 {
-    font-size: 24px;
+    font-size: 22px;
   }
 
   .app-header p {
-    font-size: 14px;
+    font-size: 13px;
+  }
+
+  .app-main {
+    gap: 20px;
+  }
+
+  .main-content {
+    gap: 15px;
   }
 
   .current-pattern-display {
     flex-direction: column;
     text-align: center;
+    padding: 15px;
+    gap: 10px;
+  }
+
+  .pattern-key {
+    width: 50px;
+    height: 50px;
+    font-size: 20px;
   }
 
   .pattern-name {
+    font-size: 18px;
+  }
+}
+
+/* Small mobile */
+@media (max-width: 480px) {
+  .app {
+    padding: 8px;
+  }
+
+  .app-header {
+    padding: 15px 10px;
+    margin-bottom: 15px;
+  }
+
+  .app-header h1 {
     font-size: 20px;
+  }
+
+  .app-header p {
+    font-size: 12px;
   }
 }
 

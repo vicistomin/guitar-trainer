@@ -1,7 +1,10 @@
 import { NOTES } from '../../utils/musicTheory';
+import { getInstrumentList } from '../../data/instruments';
 import './Controls.css';
 
 export function Controls({
+  instrument,
+  setInstrument,
   rootNote,
   setRootNote,
   bpm,
@@ -15,8 +18,25 @@ export function Controls({
   onRandomize,
   isPlaying,
 }) {
+  const instruments = getInstrumentList();
+
   return (
     <div className="controls">
+      <div className="control-group">
+        <label htmlFor="instrument">Instrument</label>
+        <select
+          id="instrument"
+          value={instrument}
+          onChange={(e) => setInstrument(e.target.value)}
+        >
+          {instruments.map((inst) => (
+            <option key={inst.id} value={inst.id}>
+              {inst.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
       <div className="control-group">
         <label htmlFor="root-note">Root Note</label>
         <select

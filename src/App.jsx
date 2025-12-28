@@ -8,10 +8,14 @@ import { useProgress } from './hooks/useProgress';
 import { scales } from './data/scales';
 import { pentatonics } from './data/pentatonics';
 import { arpeggios } from './data/arpeggios';
+import { getInstrument, DEFAULT_INSTRUMENT } from './data/instruments';
 import { NOTES } from './utils/musicTheory';
 import { generateFretboard, getPatternPositions, getUniqueNotesForPlayback } from './utils/fretboardUtils';
 
 function App() {
+  // Instrument selection
+  const [instrument, setInstrument] = useState(DEFAULT_INSTRUMENT);
+
   // Pattern selection state
   const [patternType, setPatternType] = useState('scales');
   const [selectedPattern, setSelectedPattern] = useState(scales[0]);
@@ -37,10 +41,13 @@ function App() {
     getStats,
     formatTime,
     resetProgress,
+    autoStartEnabled,
+    toggleAutoStart,
   } = useProgress();
 
-  // Generate fretboard data
-  const fretboard = useMemo(() => generateFretboard(), []);
+  // Generate fretboard data based on selected instrument
+  const fretboard = useMemo(() => generateFretboard(instrument), [instrument]);
+  const instrumentConfig = getInstrument(instrument);
 
   // Handle note click
   const handleNoteClick = useCallback((noteData) => {
@@ -102,7 +109,7 @@ function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>Guitar Trainer</h1>
+        <h1>{instrumentConfig.name} Trainer</h1>
         <p>Practice scales, arpeggios, and pentatonics</p>
       </header>
 
@@ -116,6 +123,7 @@ function App() {
 
           {/* Fretboard */}
           <Fretboard
+            instrument={instrument}
             rootNote={rootNote}
             intervals={selectedPattern?.intervals}
             onNoteClick={handleNoteClick}
@@ -125,6 +133,8 @@ function App() {
 
           {/* Controls */}
           <Controls
+            instrument={instrument}
+            setInstrument={setInstrument}
             rootNote={rootNote}
             setRootNote={setRootNote}
             bpm={bpm}
@@ -159,6 +169,8 @@ function App() {
             getStats={getStats}
             formatTime={formatTime}
             onResetProgress={resetProgress}
+            autoStartEnabled={autoStartEnabled}
+            onToggleAutoStart={toggleAutoStart}
           />
         </aside>
       </main>

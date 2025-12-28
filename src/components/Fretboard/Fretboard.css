@@ -1,7 +1,7 @@
 .fretboard-container {
   width: 100%;
   overflow-x: auto;
-  padding: 20px 0;
+  padding: 30px 0;
 }
 
 .fretboard {
@@ -176,28 +176,126 @@
   box-shadow: 1px 0 2px rgba(0, 0, 0, 0.2);
 }
 
+/* Ukulele-specific styles */
+.fretboard-ukulele {
+  min-width: 600px;
+}
+
+.fretboard-ukulele .string-row {
+  height: 32px;
+}
+
+.fretboard-ukulele .nut {
+  left: 70px;
+}
+
+.fretboard-ukulele .fret-wires {
+  top: 30px;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
+  .fretboard-container {
+    padding: 15px 0;
+    -webkit-overflow-scrolling: touch;
+  }
+
   .fretboard {
-    min-width: 700px;
+    min-width: 650px;
+    padding: 8px;
+  }
+
+  .fretboard-ukulele {
+    min-width: 480px;
+  }
+
+  .string-row {
+    height: 32px;
   }
 
   .string-label {
-    width: 40px;
+    width: 35px;
     font-size: 12px;
   }
 
+  .nut {
+    left: 55px;
+    width: 6px;
+  }
+
+  .fret-numbers {
+    margin-left: 55px;
+    font-size: 10px;
+  }
+
+  .fret-markers {
+    left: 63px;
+  }
+
+  .fret-wires {
+    left: 63px;
+  }
+
+  /* Larger touch targets for notes */
+  .fret {
+    min-height: 32px;
+  }
+
   .note-indicator {
-    width: 20px;
-    height: 20px;
+    width: 26px;
+    height: 26px;
+    /* Increase touch target */
+    padding: 4px;
+    box-sizing: content-box;
   }
 
   .note-indicator.root {
-    width: 24px;
-    height: 24px;
+    width: 30px;
+    height: 30px;
   }
 
   .note-text {
-    font-size: 9px;
+    font-size: 10px;
+  }
+}
+
+/* Small mobile */
+@media (max-width: 480px) {
+  .fretboard {
+    min-width: 600px;
+  }
+
+  .fretboard-ukulele {
+    min-width: 420px;
+  }
+
+  .string-row {
+    height: 30px;
+  }
+
+  .string-label {
+    width: 30px;
+    font-size: 11px;
+  }
+
+  .nut {
+    left: 50px;
+  }
+
+  .fret-numbers {
+    margin-left: 50px;
+  }
+
+  .fret-markers {
+    left: 58px;
+  }
+
+  .fret-wires {
+    left: 58px;
+  }
+
+  .fret.open {
+    max-width: 35px;
+    margin-left: -42px;
   }
 }
