@@ -5,12 +5,16 @@ import { PatternSelector } from './components/PatternSelector/PatternSelector';
 import { ProgressTracker } from './components/ProgressTracker/ProgressTracker';
 import { useAudio } from './hooks/useAudio';
 import { useProgress } from './hooks/useProgress';
+import { useUrlState } from './hooks/useUrlState';
 import { scales } from './data/scales';
 import { pentatonics } from './data/pentatonics';
 import { arpeggios } from './data/arpeggios';
 import { getInstrument, DEFAULT_INSTRUMENT } from './data/instruments';
 import { NOTES } from './utils/musicTheory';
 import { generateFretboard, getPatternPositions, getUniqueNotesForPlayback } from './utils/fretboardUtils';
+
+// Pattern collections for URL state
+const patterns = { scales, pentatonics, arpeggios };
 
 function App() {
   // Instrument selection
@@ -48,6 +52,19 @@ function App() {
   // Generate fretboard data based on selected instrument
   const fretboard = useMemo(() => generateFretboard(instrument), [instrument]);
   const instrumentConfig = getInstrument(instrument);
+
+  // Sync state with URL for shareable links
+  useUrlState({
+    instrument,
+    setInstrument,
+    rootNote,
+    setRootNote,
+    patternType,
+    setPatternType,
+    selectedPattern,
+    setSelectedPattern,
+    patterns,
+  });
 
   // Handle note click
   const handleNoteClick = useCallback((noteData) => {
