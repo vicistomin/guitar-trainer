@@ -114,7 +114,7 @@ export function useProgress() {
 
   // Track pattern practice
   const trackPattern = useCallback((patternName, rootNote) => {
-    const patternKey = `${rootNote} ${patternName}`;
+    const patternKey = rootNote ? `${rootNote} ${patternName}` : patternName;
     setCurrentSessionPatterns(prev => {
       if (!prev.includes(patternKey)) {
         return [...prev, patternKey];
@@ -170,6 +170,7 @@ export function useProgress() {
 
     setSessionStart(null);
     setCurrentSessionPatterns([]);
+    hasAutoStartedRef.current = false;
   }, [sessionStart, currentSessionPatterns]);
 
   // Get statistics
@@ -217,6 +218,7 @@ export function useProgress() {
     setProgress(initialProgress);
     setSessionStart(null);
     setCurrentSessionPatterns([]);
+    hasAutoStartedRef.current = false;
   }, []);
 
   return {

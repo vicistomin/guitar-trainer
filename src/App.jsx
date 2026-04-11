@@ -13,6 +13,7 @@ import { chords, getChordsForInstrument } from './data/chords';
 import { getInstrumentWithTuning, DEFAULT_INSTRUMENT, instruments } from './data/instruments';
 import { NOTES } from './utils/musicTheory';
 import { generateFretboard, getPatternPositions, getUniqueNotesForPlayback } from './utils/fretboardUtils';
+import { normalizePatternSelection } from './utils/patternState';
 
 // Pattern collections for URL state
 const patterns = { scales, pentatonics, arpeggios, chords };
@@ -34,6 +35,7 @@ function App() {
   // Playback state
   const [bpm, setBpm] = useState(120);
   const [isPlaying, setIsPlaying] = useState(false);
+  const playbackTimeoutRef = useRef(null);
 
   // Hooks
   const { playNote, playSequence, stopAll } = useAudio();
@@ -60,11 +62,25 @@ function App() {
     if (instrumentConfig) {
       setTuning(instrumentConfig.defaultTuning);
     }
-    if (selectedPattern?.type === 'chord') {
-      setPatternType('scales');
-      setSelectedPattern(scales[0]);
-    }
   }, [instrument]);
+
+  useEffect(() => {
+    const normalizedState = normalizePatternSelection({
+      patterns,
+      patternType,
+      selectedPattern,
+      instrument,
+      tuning,
+    });
+
+    if (normalizedState.patternType !== patternType) {
+      setPatternType(normalizedState.patternType);
+    }
+
+    if (normalizedState.selectedPattern?.id !== selectedPattern?.id) {
+      setSelectedPattern(normalizedState.selectedPattern);
+    }
+  }, [instrument, tuning, patternType, selectedPattern]);
 
   // Generate fretboard data based on selected instrument and tuning
   const fretboard = useMemo(() => generateFretboard(instrument, tuning), [instrument, tuning]);
@@ -92,7 +108,7 @@ function App() {
   const handleNoteClick = useCallback((noteData) => {
     playNote(noteData.frequency, 0.5);
     if (isSessionActive && selectedPattern) {
-      trackPattern(selectedPattern.name, rootNote);
+      trackPattern(selectedPattern.name, selectedPattern.type === 'chord' ? undefined : rootNote);
     }
   }, [playNote, isSessionActive, selectedPattern, rootNote, trackPattern]);
 
@@ -114,26 +130,42 @@ function App() {
     }
 
     if (playableNotes.length > 0) {
+      if (playbackTimeoutRef.current !== null) {
+        clearTimeout(playbackTimeoutRef.current);
+      }
       setIsPlaying(true);
       playSequence(playableNotes, bpm);
 
       // Stop playing after sequence finishes
       const duration = (playableNotes.length * 60 / bpm) * 1000;
-      setTimeout(() => {
+      playbackTimeoutRef.current = setTimeout(() => {
         setIsPlaying(false);
+        playbackTimeoutRef.current = null;
       }, duration);
 
       if (isSessionActive) {
-        trackPattern(selectedPattern.name, rootNote);
+        trackPattern(selectedPattern.name, selectedPattern.type === 'chord' ? undefined : rootNote);
       }
     }
   }, [selectedPattern, rootNote, fretboard, bpm, playSequence, isSessionActive, trackPattern]);
 
   // Stop playback
   const handleStopPattern = useCallback(() => {
+    if (playbackTimeoutRef.current !== null) {
+      clearTimeout(playbackTimeoutRef.current);
+      playbackTimeoutRef.current = null;
+    }
     stopAll();
     setIsPlaying(false);
   }, [stopAll]);
+
+  useEffect(() => {
+    return () => {
+      if (playbackTimeoutRef.current !== null) {
+        clearTimeout(playbackTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Randomize pattern and key
   const handleRandomize = useCallback(() => {
@@ -183,12 +215,13 @@ function App() {
           <Fretboard
             instrument={instrument}
             tuning={tuning}
-            rootNote={rootNote}
+            rootNote={isChordMode ? undefined : rootNote}
             intervals={!isChordMode ? selectedPattern?.intervals : undefined}
             chordShape={isChordMode ? selectedPattern : undefined}
             onNoteClick={handleNoteClick}
-            showNoteNames={showNoteNames}
-            showIntervals={showIntervals}
+            showNoteNames={showNoteNames || isChordMode}
+            showIntervals={!isChordMode && showIntervals}
+            highlightRoot={!isChordMode}
           />
 
           {/* Controls */}
