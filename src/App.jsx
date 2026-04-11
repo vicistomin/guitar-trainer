@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { Fretboard } from './components/Fretboard/Fretboard';
 import { Controls } from './components/Controls/Controls';
 import { PatternSelector } from './components/PatternSelector/PatternSelector';
@@ -9,16 +9,18 @@ import { useUrlState } from './hooks/useUrlState';
 import { scales } from './data/scales';
 import { pentatonics } from './data/pentatonics';
 import { arpeggios } from './data/arpeggios';
-import { getInstrument, DEFAULT_INSTRUMENT } from './data/instruments';
+import { chords, getChordsForInstrument } from './data/chords';
+import { getInstrumentWithTuning, DEFAULT_INSTRUMENT, instruments } from './data/instruments';
 import { NOTES } from './utils/musicTheory';
 import { generateFretboard, getPatternPositions, getUniqueNotesForPlayback } from './utils/fretboardUtils';
 
 // Pattern collections for URL state
-const patterns = { scales, pentatonics, arpeggios };
+const patterns = { scales, pentatonics, arpeggios, chords };
 
 function App() {
   // Instrument selection
   const [instrument, setInstrument] = useState(DEFAULT_INSTRUMENT);
+  const [tuning, setTuning] = useState('standard');
 
   // Pattern selection state
   const [patternType, setPatternType] = useState('scales');
@@ -49,14 +51,34 @@ function App() {
     toggleAutoStart,
   } = useProgress();
 
-  // Generate fretboard data based on selected instrument
-  const fretboard = useMemo(() => generateFretboard(instrument), [instrument]);
-  const instrumentConfig = getInstrument(instrument);
+  // Reset tuning when instrument actually changes (not on initial mount)
+  const prevInstrument = useRef(instrument);
+  useEffect(() => {
+    if (prevInstrument.current === instrument) return;
+    prevInstrument.current = instrument;
+    const instrumentConfig = instruments[instrument];
+    if (instrumentConfig) {
+      setTuning(instrumentConfig.defaultTuning);
+    }
+    if (selectedPattern?.type === 'chord') {
+      setPatternType('scales');
+      setSelectedPattern(scales[0]);
+    }
+  }, [instrument]);
+
+  // Generate fretboard data based on selected instrument and tuning
+  const fretboard = useMemo(() => generateFretboard(instrument, tuning), [instrument, tuning]);
+  const instrumentConfig = getInstrumentWithTuning(instrument, tuning);
+
+  // Check if current pattern is a chord shape
+  const isChordMode = selectedPattern?.type === 'chord';
 
   // Sync state with URL for shareable links
   useUrlState({
     instrument,
     setInstrument,
+    tuning,
+    setTuning,
     rootNote,
     setRootNote,
     patternType,
@@ -78,8 +100,18 @@ function App() {
   const handlePlayPattern = useCallback(() => {
     if (!selectedPattern) return;
 
-    const positions = getPatternPositions(rootNote, selectedPattern.intervals, fretboard);
-    const playableNotes = getUniqueNotesForPlayback(positions, true);
+    let playableNotes;
+
+    if (selectedPattern.type === 'chord') {
+      // For chords: extract notes from specific fret positions
+      playableNotes = selectedPattern.frets
+        .map((fret, stringIndex) => fret !== null ? fretboard[stringIndex][fret] : null)
+        .filter(Boolean)
+        .sort((a, b) => a.frequency - b.frequency);
+    } else {
+      const positions = getPatternPositions(rootNote, selectedPattern.intervals, fretboard);
+      playableNotes = getUniqueNotesForPlayback(positions, true);
+    }
 
     if (playableNotes.length > 0) {
       setIsPlaying(true);
@@ -105,13 +137,22 @@ function App() {
 
   // Randomize pattern and key
   const handleRandomize = useCallback(() => {
-    // Get all patterns
+    // Get all interval-based patterns
     const allPatterns = [...scales, ...pentatonics, ...arpeggios];
+
+    // Include chords if available for current instrument
+    const instrumentChords = getChordsForInstrument(instrument, tuning);
+    if (instrumentChords.length > 0) {
+      allPatterns.push(...instrumentChords);
+    }
+
     const randomPattern = allPatterns[Math.floor(Math.random() * allPatterns.length)];
     const randomNote = NOTES[Math.floor(Math.random() * NOTES.length)];
 
     // Determine pattern type
-    if (scales.includes(randomPattern)) {
+    if (randomPattern.type === 'chord') {
+      setPatternType('chords');
+    } else if (scales.includes(randomPattern)) {
       setPatternType('scales');
     } else if (pentatonics.includes(randomPattern)) {
       setPatternType('pentatonics');
@@ -121,28 +162,30 @@ function App() {
 
     setSelectedPattern(randomPattern);
     setRootNote(randomNote);
-  }, []);
+  }, [instrument, tuning]);
 
   return (
     <div className="app">
       <header className="app-header">
         <h1>{instrumentConfig.name} Trainer</h1>
-        <p>Practice scales, arpeggios, and pentatonics</p>
+        <p>Practice scales, arpeggios, pentatonics{isChordMode ? '' : ' & chords'}</p>
       </header>
 
       <main className="app-main">
         <div className="main-content">
           {/* Current pattern display */}
           <div className="current-pattern-display">
-            <span className="pattern-key">{rootNote}</span>
+            {!isChordMode && <span className="pattern-key">{rootNote}</span>}
             <span className="pattern-name">{selectedPattern?.name || 'Select a pattern'}</span>
           </div>
 
           {/* Fretboard */}
           <Fretboard
             instrument={instrument}
+            tuning={tuning}
             rootNote={rootNote}
-            intervals={selectedPattern?.intervals}
+            intervals={!isChordMode ? selectedPattern?.intervals : undefined}
+            chordShape={isChordMode ? selectedPattern : undefined}
             onNoteClick={handleNoteClick}
             showNoteNames={showNoteNames}
             showIntervals={showIntervals}
@@ -152,6 +195,8 @@ function App() {
           <Controls
             instrument={instrument}
             setInstrument={setInstrument}
+            tuning={tuning}
+            setTuning={setTuning}
             rootNote={rootNote}
             setRootNote={setRootNote}
             bpm={bpm}
@@ -164,6 +209,7 @@ function App() {
             onStopPattern={handleStopPattern}
             onRandomize={handleRandomize}
             isPlaying={isPlaying}
+            isChordMode={isChordMode}
           />
 
           {/* Pattern Selector */}
@@ -172,6 +218,8 @@ function App() {
             setPatternType={setPatternType}
             selectedPattern={selectedPattern}
             setSelectedPattern={setSelectedPattern}
+            instrument={instrument}
+            tuning={tuning}
           />
         </div>
 
