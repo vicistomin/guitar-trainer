@@ -1,11 +1,12 @@
 import { useEffect, useCallback, useRef } from 'react';
+import { instruments } from '../data/instruments';
 
 // Base path from vite config
 const BASE_PATH = '/guitar-trainer';
 
 // Valid values
-const VALID_INSTRUMENTS = ['guitar', 'ukulele'];
-const VALID_TYPES = ['scales', 'pentatonics', 'arpeggios'];
+const VALID_INSTRUMENTS = ['guitar', 'ukulele', 'mandolin', 'violin'];
+const VALID_TYPES = ['scales', 'pentatonics', 'arpeggios', 'chords'];
 const VALID_NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
 // Convert pattern name to URL slug: "Minor Pentatonic" -> "minor-pentatonic"
@@ -29,14 +30,24 @@ function findPatternBySlug(patternsArray, slug) {
   return patternsArray.find(p => toSlug(p.name) === slug);
 }
 
+// Check if a string is a valid tuning ID for an instrument
+function isValidTuning(instrumentId, tuningId) {
+  const instrument = instruments[instrumentId];
+  return instrument && instrument.tunings && tuningId in instrument.tunings;
+}
+
 /**
  * Hook to sync app state with clean URL paths
- * URL format: /guitar-trainer/{instrument}/{type}/{pattern}/{note}
- * Example: /guitar-trainer/ukulele/scales/major/c-sharp
+ * URL format: /guitar-trainer/{instrument}/{tuning?}/{type}/{pattern}/{note}
+ * Tuning segment is optional (omitted when using default tuning)
+ * Example: /guitar-trainer/guitar/dadgad/scales/major/c
+ * Example: /guitar-trainer/ukulele/scales/major/c-sharp (default tuning omitted)
  */
 export function useUrlState({
   instrument,
   setInstrument,
+  tuning,
+  setTuning,
   rootNote,
   setRootNote,
   patternType,
@@ -61,13 +72,20 @@ export function useUrlState({
 
     if (segments.length === 0) return;
 
-    // Parse: /{instrument}/{type}/{pattern}/{note}
-    const [urlInstrument, urlType, urlPattern, urlNote] = segments;
+    const [urlInstrument, ...rest] = segments;
 
     // Set instrument
-    if (urlInstrument && VALID_INSTRUMENTS.includes(urlInstrument)) {
-      setInstrument(urlInstrument);
+    if (!urlInstrument || !VALID_INSTRUMENTS.includes(urlInstrument)) return;
+    setInstrument(urlInstrument);
+
+    // Check if second segment is a tuning ID for this instrument
+    let remainingSegments = rest;
+    if (rest.length > 0 && isValidTuning(urlInstrument, rest[0])) {
+      setTuning(rest[0]);
+      remainingSegments = rest.slice(1);
     }
+
+    const [urlType, urlPattern, urlNote] = remainingSegments;
 
     // Set pattern type and pattern
     if (urlType && VALID_TYPES.includes(urlType)) {
@@ -88,15 +106,20 @@ export function useUrlState({
         setRootNote(note);
       }
     }
-  }, [setInstrument, setRootNote, setPatternType, setSelectedPattern, patterns]);
+  }, [setInstrument, setTuning, setRootNote, setPatternType, setSelectedPattern, patterns]);
 
   // Build clean URL path
   const buildPath = useCallback(() => {
     const patternSlug = selectedPattern ? toSlug(selectedPattern.name) : 'major';
     const noteSlug = noteToSlug(rootNote);
 
-    return `${BASE_PATH}/${instrument}/${patternType}/${patternSlug}/${noteSlug}`;
-  }, [instrument, patternType, selectedPattern, rootNote]);
+    // Only include tuning in URL when it differs from default
+    const instrumentConfig = instruments[instrument];
+    const isDefaultTuning = !instrumentConfig || tuning === instrumentConfig.defaultTuning;
+    const tuningSegment = isDefaultTuning ? '' : `/${tuning}`;
+
+    return `${BASE_PATH}/${instrument}${tuningSegment}/${patternType}/${patternSlug}/${noteSlug}`;
+  }, [instrument, tuning, patternType, selectedPattern, rootNote]);
 
   // Update URL when state changes
   useEffect(() => {

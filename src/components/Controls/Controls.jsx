@@ -1,10 +1,12 @@
 import { NOTES } from '../../utils/musicTheory';
-import { getInstrumentList } from '../../data/instruments';
+import { getInstrumentList, getTuningList } from '../../data/instruments';
 import './Controls.css';
 
 export function Controls({
   instrument,
   setInstrument,
+  tuning,
+  setTuning,
   rootNote,
   setRootNote,
   bpm,
@@ -17,8 +19,11 @@ export function Controls({
   onStopPattern,
   onRandomize,
   isPlaying,
+  isChordMode,
 }) {
   const instruments = getInstrumentList();
+  const tunings = getTuningList(instrument);
+  const showTuningSelector = tunings.length > 1;
 
   return (
     <div className="controls">
@@ -37,20 +42,39 @@ export function Controls({
         </select>
       </div>
 
-      <div className="control-group">
-        <label htmlFor="root-note">Root Note</label>
-        <select
-          id="root-note"
-          value={rootNote}
-          onChange={(e) => setRootNote(e.target.value)}
-        >
-          {NOTES.map((note) => (
-            <option key={note} value={note}>
-              {note}
-            </option>
-          ))}
-        </select>
-      </div>
+      {showTuningSelector && (
+        <div className="control-group">
+          <label htmlFor="tuning">Tuning</label>
+          <select
+            id="tuning"
+            value={tuning}
+            onChange={(e) => setTuning(e.target.value)}
+          >
+            {tunings.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {!isChordMode && (
+        <div className="control-group">
+          <label htmlFor="root-note">Root Note</label>
+          <select
+            id="root-note"
+            value={rootNote}
+            onChange={(e) => setRootNote(e.target.value)}
+          >
+            {NOTES.map((note) => (
+              <option key={note} value={note}>
+                {note}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div className="control-group">
         <label htmlFor="bpm">BPM: {bpm}</label>
