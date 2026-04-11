@@ -89,6 +89,22 @@
   font-size: 14px;
 }
 
+/* Muted string label */
+.string-muted {
+  color: #888;
+  font-size: 16px;
+}
+
+/* Barre indicator */
+.barre-indicator {
+  position: absolute;
+  width: 8px;
+  background: rgba(74, 144, 217, 0.6);
+  border-radius: 4px;
+  z-index: 4;
+  pointer-events: none;
+}
+
 /* Individual fret */
 .fret {
   flex: 1;
@@ -193,11 +209,59 @@
   top: 30px;
 }
 
+/* Mandolin-specific styles */
+.fretboard-mandolin {
+  min-width: 800px;
+}
+
+.fretboard-mandolin .string-row {
+  height: 32px;
+}
+
+.fretboard-mandolin .nut {
+  left: 70px;
+}
+
+.fretboard-mandolin .fret-wires {
+  top: 30px;
+}
+
+/* Violin-specific styles */
+.fretboard-violin {
+  min-width: 600px;
+}
+
+.fretboard-violin .string-row {
+  height: 32px;
+}
+
+.fretboard-violin .nut {
+  left: 70px;
+}
+
+.fretboard-violin .fret-wires {
+  top: 30px;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .fretboard-container {
     padding: 15px 0;
     -webkit-overflow-scrolling: touch;
+    position: relative;
+  }
+
+  /* Scroll fade indicator on right edge */
+  .fretboard-container::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 15px;
+    bottom: 0;
+    width: 30px;
+    background: linear-gradient(to right, transparent, rgba(26, 26, 26, 0.85));
+    pointer-events: none;
+    z-index: 10;
   }
 
   .fretboard {
@@ -209,31 +273,39 @@
     min-width: 480px;
   }
 
+  .fretboard-mandolin {
+    min-width: 650px;
+  }
+
+  .fretboard-violin {
+    min-width: 480px;
+  }
+
   .string-row {
     height: 32px;
   }
 
   .string-label {
-    width: 35px;
-    font-size: 12px;
+    width: 45px;
+    font-size: 13px;
   }
 
   .nut {
-    left: 55px;
+    left: 45px;
     width: 6px;
   }
 
   .fret-numbers {
-    margin-left: 55px;
+    margin-left: 45px;
     font-size: 10px;
   }
 
   .fret-markers {
-    left: 63px;
+    left: 53px;
   }
 
   .fret-wires {
-    left: 63px;
+    left: 53px;
   }
 
   /* Larger touch targets for notes */
@@ -269,29 +341,37 @@
     min-width: 420px;
   }
 
+  .fretboard-mandolin {
+    min-width: 580px;
+  }
+
+  .fretboard-violin {
+    min-width: 420px;
+  }
+
   .string-row {
     height: 30px;
   }
 
   .string-label {
-    width: 30px;
-    font-size: 11px;
+    width: 38px;
+    font-size: 12px;
   }
 
   .nut {
-    left: 50px;
+    left: 38px;
   }
 
   .fret-numbers {
-    margin-left: 50px;
+    margin-left: 38px;
   }
 
   .fret-markers {
-    left: 58px;
+    left: 46px;
   }
 
   .fret-wires {
-    left: 58px;
+    left: 46px;
   }
 
   .fret.open {

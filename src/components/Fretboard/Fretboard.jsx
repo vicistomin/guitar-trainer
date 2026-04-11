@@ -1,22 +1,24 @@
 import { useMemo } from 'react';
 import { generateFretboard } from '../../utils/fretboardUtils';
-import { getInstrument } from '../../data/instruments';
+import { getInstrumentWithTuning } from '../../data/instruments';
 import { isNoteInPattern, getInterval } from '../../utils/musicTheory';
 import './Fretboard.css';
 
 export function Fretboard({
   instrument = 'guitar',
+  tuning: tuningId,
   rootNote,
   intervals,
+  chordShape,
   onNoteClick,
   showNoteNames = true,
   showIntervals = false,
   highlightRoot = true,
 }) {
-  const instrumentConfig = getInstrument(instrument);
+  const instrumentConfig = getInstrumentWithTuning(instrument, tuningId);
   const { tuning, frets: numFrets, strings: numStrings, fretMarkers, doubleFretMarkers } = instrumentConfig;
 
-  const fretboard = useMemo(() => generateFretboard(instrument), [instrument]);
+  const fretboard = useMemo(() => generateFretboard(instrument, tuningId), [instrument, tuningId]);
 
   const handleNoteClick = (noteData) => {
     if (onNoteClick) {
@@ -24,7 +26,10 @@ export function Fretboard({
     }
   };
 
-  const isNoteActive = (note) => {
+  const isNoteActive = (note, stringIndex, fretIndex) => {
+    if (chordShape) {
+      return chordShape.frets[stringIndex] === fretIndex;
+    }
     if (!rootNote || !intervals) return false;
     return isNoteInPattern(note, rootNote, intervals);
   };
@@ -39,6 +44,21 @@ export function Fretboard({
     }
     return note;
   };
+
+  // For chord shapes: determine string status (muted, open, or fretted)
+  const getStringStatus = (stringIndex) => {
+    if (!chordShape) return null;
+    const fret = chordShape.frets[stringIndex];
+    if (fret === null) return 'muted';
+    if (fret === 0) return 'open';
+    return 'fretted';
+  };
+
+  // Calculate barre positions for rendering
+  const barreElements = useMemo(() => {
+    if (!chordShape || !chordShape.barres || chordShape.barres.length === 0) return [];
+    return chordShape.barres;
+  }, [chordShape]);
 
   return (
     <div className="fretboard-container">
@@ -69,18 +89,42 @@ export function Fretboard({
           ))}
         </div>
 
+        {/* Barre indicators */}
+        {barreElements.map((barre, idx) => {
+          const topStringDisplay = numStrings - 1 - barre.toString;
+          const bottomStringDisplay = numStrings - 1 - barre.fromString;
+          const stringSpan = bottomStringDisplay - topStringDisplay;
+          // Position relative to the fret area
+          const fretPercent = ((barre.fret - 0.5) / numFrets) * 100;
+          return (
+            <div
+              key={idx}
+              className="barre-indicator"
+              style={{
+                top: `calc(${30 + topStringDisplay * 28}px)`,
+                height: `${stringSpan * 28}px`,
+                left: `calc(${instrumentConfig.tuning ? 75 : 70}px + ${fretPercent}% - 4px)`,
+              }}
+            />
+          );
+        })}
+
         {/* Strings and frets - reversed so lowest string is at bottom */}
         <div className="strings-container">
           {[...fretboard].reverse().map((string, displayIndex) => {
             const stringIndex = numStrings - 1 - displayIndex;
+            const stringStatus = getStringStatus(stringIndex);
+
             return (
               <div key={stringIndex} className="string-row">
                 {/* Open string label */}
-                <div className="string-label">{tuning[stringIndex]}</div>
+                <div className={`string-label ${stringStatus === 'muted' ? 'string-muted' : ''}`}>
+                  {stringStatus === 'muted' ? 'X' : tuning[stringIndex]}
+                </div>
 
                 {/* Frets */}
                 {string.map((fretData, fretIndex) => {
-                  const active = isNoteActive(fretData.note);
+                  const active = isNoteActive(fretData.note, stringIndex, fretIndex);
                   const root = isRoot(fretData.note);
 
                   return (

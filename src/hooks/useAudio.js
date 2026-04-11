@@ -57,6 +57,25 @@ export function useAudio() {
     return { oscillator, gainNode };
   }, [getAudioContext]);
 
+  // Stop all scheduled notes
+  const stopAll = useCallback(() => {
+    const ctx = audioContextRef.current;
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    scheduledNodesRef.current.forEach(({ oscillator, gainNode }) => {
+      try {
+        gainNode.gain.cancelScheduledValues(now);
+        gainNode.gain.setValueAtTime(gainNode.gain.value, now);
+        gainNode.gain.linearRampToValueAtTime(0, now + 0.05);
+        oscillator.stop(now + 0.1);
+      } catch {
+        // Oscillator may have already stopped
+      }
+    });
+    scheduledNodesRef.current = [];
+  }, []);
+
   // Play a sequence of notes
   const playSequence = useCallback((notes, bpm = 120, loop = false) => {
     const noteDuration = 60 / bpm; // Duration in seconds per beat
@@ -83,26 +102,7 @@ export function useAudio() {
 
       return () => clearInterval(intervalId);
     }
-  }, [getAudioContext, playNote]);
-
-  // Stop all scheduled notes
-  const stopAll = useCallback(() => {
-    const ctx = audioContextRef.current;
-    if (!ctx) return;
-
-    const now = ctx.currentTime;
-    scheduledNodesRef.current.forEach(({ oscillator, gainNode }) => {
-      try {
-        gainNode.gain.cancelScheduledValues(now);
-        gainNode.gain.setValueAtTime(gainNode.gain.value, now);
-        gainNode.gain.linearRampToValueAtTime(0, now + 0.05);
-        oscillator.stop(now + 0.1);
-      } catch (e) {
-        // Oscillator may have already stopped
-      }
-    });
-    scheduledNodesRef.current = [];
-  }, []);
+  }, [getAudioContext, playNote, stopAll]);
 
   // Play a click/metronome sound
   const playClick = useCallback((high = false) => {

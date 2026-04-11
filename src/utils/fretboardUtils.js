@@ -4,11 +4,11 @@ import {
   isNoteInPattern,
   getFrequency
 } from './musicTheory';
-import { getInstrument, DEFAULT_INSTRUMENT } from '../data/instruments';
+import { getInstrumentWithTuning, DEFAULT_INSTRUMENT } from '../data/instruments';
 
-// Generate fretboard data structure for a given instrument
-export function generateFretboard(instrumentId = DEFAULT_INSTRUMENT) {
-  const instrument = getInstrument(instrumentId);
+// Generate fretboard data structure for a given instrument and tuning
+export function generateFretboard(instrumentId = DEFAULT_INSTRUMENT, tuningId = null) {
+  const instrument = getInstrumentWithTuning(instrumentId, tuningId);
   const { tuning, tuningOctaves, frets, strings } = instrument;
   const fretboard = [];
 

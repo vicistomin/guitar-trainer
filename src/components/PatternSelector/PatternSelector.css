@@ -192,13 +192,18 @@
   }
 
   .pattern-tabs {
-    gap: 6px;
+    flex-wrap: nowrap;
+    gap: 4px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .pattern-tab {
-    padding: 10px 12px;
+    padding: 10px 8px;
     font-size: 12px;
-    min-width: 80px;
+    min-width: unset;
+    flex: 1 1 0;
+    white-space: nowrap;
   }
 
   .pattern-list {

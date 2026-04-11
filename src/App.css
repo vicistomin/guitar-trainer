@@ -127,11 +127,13 @@ body {
 
   .main-content {
     gap: 15px;
+    min-width: 0;
   }
 
   .current-pattern-display {
     flex-direction: column;
     text-align: center;
+    align-items: center;
     padding: 15px;
     gap: 10px;
   }
