@@ -573,11 +573,6 @@ export function getChordVoicings(chordId, instrumentId, tuningId) {
 }
 
 export function getChordsForInstrument(instrumentId, tuningId) {
-  // Preserve the current flat UI contract until canonical voicing selection lands.
-  if (instrumentId !== 'guitar' || tuningId !== 'standard') {
-    return [];
-  }
-
   return chords.flatMap((chord) =>
     getChordVoicings(chord.id, instrumentId, tuningId).map((voicing) =>
       toLegacyFlatShape(chord, voicing),

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { chords, getChordById } from './chords.js';
+import { chords, getChordById, getChordsForInstrument } from './chords.js';
 
 const JAZZ_FAMILIES = new Set([
   'Major 7',
@@ -69,6 +69,8 @@ describe('canonical chord data', () => {
     expect(mandolinVoicings.every(
       (voicing) => voicing.instrument === 'mandolin' && voicing.tuning === 'standard',
     )).toBe(true);
+    expect(getChordsForInstrument('ukulele', 'standard')).not.toHaveLength(0);
+    expect(getChordsForInstrument('mandolin', 'standard')).not.toHaveLength(0);
   });
 
   test.each(['dropd', 'dadgad', 'openg'])(
@@ -78,6 +80,7 @@ describe('canonical chord data', () => {
       const jazzChords = tuningVoicings.filter((voicing) => JAZZ_FAMILIES.has(voicing.family));
 
       expect(jazzChords.length).toBeGreaterThan(0);
+      expect(getChordsForInstrument('guitar', tuning)).not.toHaveLength(0);
     },
   );
 });
