@@ -309,8 +309,9 @@ function App() {
           <PatternSelector
             patternType={patternType}
             setPatternType={setPatternType}
-            selectedPattern={isChordMode ? selectedChordShape : selectedPattern}
+            selectedPattern={selectedPattern}
             setSelectedPattern={handleSelectedPatternChange}
+            selectedChordVoicing={focusedChordVoicing}
             instrument={instrument}
             tuning={tuning}
           />

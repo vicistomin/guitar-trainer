@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { scales, scaleCategories } from '../../data/scales';
 import { pentatonics, pentatonicCategories } from '../../data/pentatonics';
 import { arpeggios, arpeggioCategories } from '../../data/arpeggios';
-import { chords, chordCategories, getChordsForInstrument } from '../../data/chords';
+import { chords, chordCategories, getChordVoicings } from '../../data/chords';
 import './PatternSelector.css';
 
 const PATTERN_TYPES = [
@@ -17,40 +17,43 @@ export function PatternSelector({
   setPatternType,
   selectedPattern,
   setSelectedPattern,
+  selectedChordVoicing,
   instrument,
   tuning,
 }) {
   const currentType = PATTERN_TYPES.find((t) => t.id === patternType) || PATTERN_TYPES[0];
+  const availableChordPatterns = useMemo(() => {
+    if (!instrument || !tuning) {
+      return [];
+    }
 
-  // Filter chords by instrument/tuning
+    return chords.filter((chord) => getChordVoicings(chord.id, instrument, tuning).length > 0);
+  }, [instrument, tuning]);
+
   const filteredData = useMemo(() => {
     if (currentType.id === 'chords' && instrument && tuning) {
-      return getChordsForInstrument(instrument, tuning);
+      return availableChordPatterns;
     }
-    return currentType.data;
-  }, [currentType, instrument, tuning]);
 
-  // Get categories that have data
+    return currentType.data;
+  }, [availableChordPatterns, currentType, instrument, tuning]);
+
   const activeCategories = useMemo(() => {
-    return currentType.categories.filter(cat =>
-      filteredData.some(p => p.category === cat)
+    return currentType.categories.filter((category) =>
+      filteredData.some((pattern) => pattern.category === category),
     );
   }, [currentType.categories, filteredData]);
 
-  // Check if chords are available for current instrument
-  const chordsAvailable = useMemo(() => {
-    if (!instrument || !tuning) return false;
-    return getChordsForInstrument(instrument, tuning).length > 0;
-  }, [instrument, tuning]);
+  const chordsAvailable = availableChordPatterns.length > 0;
 
   const handleTypeChange = (typeId) => {
     setPatternType(typeId);
     const type = PATTERN_TYPES.find((t) => t.id === typeId);
+
     if (type) {
       if (typeId === 'chords') {
-        const instrumentChords = getChordsForInstrument(instrument, tuning);
-        if (instrumentChords.length > 0) {
-          setSelectedPattern(instrumentChords[0]);
+        if (availableChordPatterns.length > 0) {
+          setSelectedPattern(availableChordPatterns[0]);
         }
       } else if (type.data.length > 0) {
         setSelectedPattern(type.data[0]);
@@ -60,6 +63,7 @@ export function PatternSelector({
 
   const handlePatternChange = (patternId) => {
     const pattern = filteredData.find((p) => p.id === patternId);
+
     if (pattern) {
       setSelectedPattern(pattern);
     }
@@ -113,9 +117,16 @@ export function PatternSelector({
           <h3>{selectedPattern.name}</h3>
           <p className="pattern-description">{selectedPattern.description}</p>
           {selectedPattern.type === 'chord' ? (
-            <p className="pattern-intervals">
-              Frets: {selectedPattern.frets.map(f => f === null ? 'X' : f).join(' - ')}
-            </p>
+            <>
+              <p className="pattern-meta">
+                Voicing: {selectedChordVoicing?.label ?? 'Unavailable'}
+              </p>
+              {selectedChordVoicing && (
+                <p className="pattern-intervals">
+                  Frets: {selectedChordVoicing.frets.map((fret) => (fret === null ? 'X' : fret)).join(' - ')}
+                </p>
+              )}
+            </>
           ) : (
             <p className="pattern-intervals">
               Intervals: {selectedPattern.intervals.join(' - ')}

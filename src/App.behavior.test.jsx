@@ -34,11 +34,32 @@ describe('App behavior', () => {
     vi.useRealTimers();
   });
 
+  test('lists canonical chord names instead of individual voicing entries', async () => {
+    renderApp();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Chords' }));
+
+    expect(screen.getByRole('button', { name: 'Cmaj7' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'C Major (Open)' })).not.toBeInTheDocument();
+  });
+
+  test('selecting a canonical chord chooses the first valid voicing for the current instrument and tuning', async () => {
+    renderApp();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Chords' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cmaj7' }));
+    vi.advanceTimersByTime(100);
+
+    expect(screen.getAllByText('Cmaj7').length).toBeGreaterThan(0);
+    expect(screen.getByText('Voicing: Open')).toBeInTheDocument();
+    expect(window.location.pathname).toBe('/guitar-trainer/guitar/chords/cmaj7/cmaj7-guitar-standard-open');
+  });
+
   test('falls back to the first valid chord when the selected chord has no voicing for the new tuning', async () => {
     renderApp();
 
     fireEvent.click(screen.getByRole('button', { name: 'Chords' }));
-    expect(screen.getAllByText('C Major (Open)').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('C').length).toBeGreaterThan(0);
 
     fireEvent.change(screen.getByLabelText('Tuning'), { target: { value: 'dadgad' } });
 
@@ -50,13 +71,24 @@ describe('App behavior', () => {
     renderApp();
 
     fireEvent.click(screen.getByRole('button', { name: 'Chords' }));
-    expect(screen.getAllByText('C Major (Open)').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('C').length).toBeGreaterThan(0);
 
     fireEvent.change(screen.getByLabelText('Instrument'), { target: { value: 'ukulele' } });
 
     expect(screen.getByRole('heading', { name: 'Ukulele Trainer' })).toBeInTheDocument();
     expect(screen.getAllByText('C').length).toBeGreaterThan(0);
     expect(screen.queryByLabelText('Root Note')).not.toBeInTheDocument();
+  });
+
+  test('keeps the same canonical chord when a new tuning has another voicing for it', async () => {
+    renderApp('/guitar-trainer/guitar/chords/cmaj7/cmaj7-guitar-standard-shell');
+
+    fireEvent.change(screen.getByLabelText('Tuning'), { target: { value: 'dropd' } });
+    vi.advanceTimersByTime(100);
+
+    expect(screen.getAllByText('Cmaj7').length).toBeGreaterThan(0);
+    expect(screen.getByText('Voicing: Drone')).toBeInTheDocument();
+    expect(window.location.pathname).toBe('/guitar-trainer/guitar/dropd/chords/cmaj7');
   });
 
   test('normalizes invalid chord URL state back to the first valid chord route', () => {
@@ -97,8 +129,8 @@ describe('App behavior', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Chords' }));
     fireEvent.click(screen.getByRole('button', { name: 'Play' }));
 
-    expect(screen.getAllByText('C Major (Open)').length).toBeGreaterThan(0);
-    expect(screen.queryByText('G C Major (Open)')).not.toBeInTheDocument();
+    expect(screen.getAllByText('C').length).toBeGreaterThan(0);
+    expect(screen.queryByText('G C')).not.toBeInTheDocument();
   });
 
   test('keeps the playback button in sync with the latest play cycle after stop and restart', async () => {
