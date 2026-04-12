@@ -24,6 +24,16 @@ describe('canonical chord data', () => {
     );
   }
 
+  function getFamiliesForInstrument(instrument, tuning) {
+    return new Set(
+      chords
+        .filter((chord) =>
+          chord.voicings.some((voicing) => voicing.instrument === instrument && voicing.tuning === tuning),
+        )
+        .map((chord) => chord.family),
+    );
+  }
+
   test('exports canonical chord ids instead of single-shape ids', () => {
     expect(chords.some((chord) => chord.id === 'cmaj7')).toBe(true);
     expect(chords.some((chord) => chord.id === 'cmaj7-guitar-standard-open')).toBe(false);
@@ -60,6 +70,9 @@ describe('canonical chord data', () => {
   test('covers standard tuning for ukulele and mandolin', () => {
     const ukuleleVoicings = getVoicingsForInstrument('ukulele', 'standard');
     const mandolinVoicings = getVoicingsForInstrument('mandolin', 'standard');
+    const ukuleleFamilies = getFamiliesForInstrument('ukulele', 'standard');
+    const mandolinFamilies = getFamiliesForInstrument('mandolin', 'standard');
+    const requiredFamilies = ['Major', 'Minor', 'Dominant 7', 'Major 7', 'Minor 7'];
 
     expect(ukuleleVoicings).not.toHaveLength(0);
     expect(mandolinVoicings).not.toHaveLength(0);
@@ -71,6 +84,10 @@ describe('canonical chord data', () => {
     )).toBe(true);
     expect(getChordsForInstrument('ukulele', 'standard')).not.toHaveLength(0);
     expect(getChordsForInstrument('mandolin', 'standard')).not.toHaveLength(0);
+    requiredFamilies.forEach((family) => {
+      expect(ukuleleFamilies.has(family)).toBe(true);
+      expect(mandolinFamilies.has(family)).toBe(true);
+    });
   });
 
   test.each(['dropd', 'dadgad', 'openg'])(

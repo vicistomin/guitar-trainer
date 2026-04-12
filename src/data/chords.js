@@ -328,6 +328,14 @@ export const chords = [
         position: 1,
         frets: [0, 0, 0, 0],
       }),
+      createVoicing({
+        id: 'am7-mandolin-standard-open',
+        instrument: 'mandolin',
+        tuning: 'standard',
+        label: 'Open',
+        position: 1,
+        frets: [2, 0, 3, 0],
+      }),
     ],
   }),
   createChord({
