@@ -1,4 +1,4 @@
-import { getChordsForInstrument } from '../data/chords';
+import { chords, getChordById, getChordVoicings, getChordsForInstrument } from '../data/chords';
 import { DEFAULT_INSTRUMENT, instruments } from '../data/instruments';
 
 export const BASE_PATH = '/guitar-trainer';
@@ -10,6 +10,10 @@ const VALID_NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#',
 
 function toSlug(name) {
   return name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+}
+
+function noteToSlug(note) {
+  return note.toLowerCase().replace('#', '-sharp');
 }
 
 function slugToNote(slug) {
@@ -25,9 +29,87 @@ function isValidTuning(instrumentId, tuningId) {
   return Boolean(instruments[instrumentId]?.tunings?.[tuningId]);
 }
 
+function getCanonicalChordsForInstrument(instrumentId, tuningId) {
+  return chords.filter((chord) => getChordVoicings(chord.id, instrumentId, tuningId).length > 0);
+}
+
+function resolveSelectedChordId(selectedPattern) {
+  if (!selectedPattern) {
+    return null;
+  }
+
+  if (selectedPattern.canonicalId) {
+    return selectedPattern.canonicalId;
+  }
+
+  return selectedPattern.id ?? null;
+}
+
+function resolveSelectedVoicingId(selectedPattern, selectedVoicingId) {
+  if (selectedVoicingId) {
+    return selectedVoicingId;
+  }
+
+  if (selectedPattern?.canonicalId) {
+    return selectedPattern.id;
+  }
+
+  return null;
+}
+
+function findChordBySegment(instrumentId, tuningId, chordSegment) {
+  if (!chordSegment) {
+    return null;
+  }
+
+  const availableChords = getCanonicalChordsForInstrument(instrumentId, tuningId);
+  const canonicalMatch = availableChords.find(
+    (chord) => chord.id === chordSegment || toSlug(chord.name) === chordSegment,
+  );
+
+  if (canonicalMatch) {
+    return canonicalMatch;
+  }
+
+  const legacyShape = getChordsForInstrument(instrumentId, tuningId).find(
+    (chord) => chord.id === chordSegment || toSlug(chord.name) === chordSegment,
+  );
+
+  return legacyShape?.canonicalId ? getChordById(legacyShape.canonicalId) ?? null : null;
+}
+
+function normalizeChordSelection({ patterns, selectedPattern, selectedVoicingId, instrument, tuning }) {
+  const availablePatterns = getCanonicalChordsForInstrument(instrument, tuning);
+
+  if (availablePatterns.length === 0) {
+    const fallbackPatterns = patterns[DEFAULT_PATTERN_TYPE] ?? [];
+
+    return {
+      patternType: DEFAULT_PATTERN_TYPE,
+      selectedPattern: fallbackPatterns[0],
+      selectedVoicingId: undefined,
+    };
+  }
+
+  const requestedChordId = resolveSelectedChordId(selectedPattern);
+  const normalizedPattern =
+    availablePatterns.find((pattern) => pattern.id === requestedChordId) ?? availablePatterns[0];
+  const availableVoicings = getChordVoicings(normalizedPattern.id, instrument, tuning);
+  const requestedVoicingId = resolveSelectedVoicingId(selectedPattern, selectedVoicingId);
+  const normalizedVoicingId =
+    availableVoicings.find((voicing) => voicing.id === requestedVoicingId)?.id ??
+    availableVoicings[0]?.id;
+
+  return {
+    patternType: 'chords',
+    selectedPattern: normalizedPattern,
+    selectedVoicingId: normalizedVoicingId,
+  };
+}
+
 export function getPatternsForType(patterns, patternType, instrument, tuning) {
   if (patternType === 'chords') {
-    return getChordsForInstrument(instrument, tuning);
+    return getCanonicalChordsForInstrument(instrument, tuning);
   }
 
   return patterns[patternType] ?? patterns[DEFAULT_PATTERN_TYPE];
@@ -37,10 +119,22 @@ export function normalizePatternSelection({
   patterns,
   patternType,
   selectedPattern,
+  selectedVoicingId,
   instrument,
   tuning,
 }) {
   let normalizedType = VALID_TYPES.includes(patternType) ? patternType : DEFAULT_PATTERN_TYPE;
+
+  if (normalizedType === 'chords') {
+    return normalizeChordSelection({
+      patterns,
+      selectedPattern,
+      selectedVoicingId,
+      instrument,
+      tuning,
+    });
+  }
+
   let availablePatterns = getPatternsForType(patterns, normalizedType, instrument, tuning);
 
   if (availablePatterns.length === 0) {
@@ -56,7 +150,47 @@ export function normalizePatternSelection({
   return {
     patternType: normalizedType,
     selectedPattern: normalizedPattern,
+    selectedVoicingId: undefined,
   };
+}
+
+export function buildPathFromState({
+  patterns,
+  instrument,
+  tuning,
+  rootNote,
+  patternType,
+  selectedPattern,
+  selectedVoicingId,
+}) {
+  const normalizedState = normalizePatternSelection({
+    patterns,
+    patternType,
+    selectedPattern,
+    selectedVoicingId,
+    instrument,
+    tuning,
+  });
+  const instrumentConfig = instruments[instrument];
+  const isDefaultTuning = !instrumentConfig || tuning === instrumentConfig.defaultTuning;
+  const tuningSegment = isDefaultTuning ? '' : `/${tuning}`;
+
+  if (normalizedState.patternType === 'chords') {
+    const voicings = getChordVoicings(normalizedState.selectedPattern.id, instrument, tuning);
+    const voicingSegment =
+      voicings.length > 1 && normalizedState.selectedVoicingId
+        ? `/${normalizedState.selectedVoicingId}`
+        : '';
+
+    return `${BASE_PATH}/${instrument}${tuningSegment}/chords/${normalizedState.selectedPattern.id}${voicingSegment}`;
+  }
+
+  const patternSlug = normalizedState.selectedPattern
+    ? toSlug(normalizedState.selectedPattern.name)
+    : toSlug(patterns[DEFAULT_PATTERN_TYPE][0].name);
+  const noteSlug = noteToSlug(rootNote ?? DEFAULT_ROOT_NOTE);
+
+  return `${BASE_PATH}/${instrument}${tuningSegment}/${normalizedState.patternType}/${patternSlug}/${noteSlug}`;
 }
 
 export function getUrlStateFromPath(pathname, patterns) {
@@ -73,6 +207,7 @@ export function getUrlStateFromPath(pathname, patterns) {
         patterns,
         patternType: DEFAULT_PATTERN_TYPE,
         selectedPattern: patterns[DEFAULT_PATTERN_TYPE][0],
+        selectedVoicingId: undefined,
         instrument: DEFAULT_INSTRUMENT,
         tuning: defaultTuning,
       }),
@@ -91,6 +226,25 @@ export function getUrlStateFromPath(pathname, patterns) {
   }
 
   let requestedType = VALID_TYPES.includes(remainingSegments[0]) ? remainingSegments[0] : DEFAULT_PATTERN_TYPE;
+
+  if (requestedType === 'chords') {
+    const requestedChord = findChordBySegment(normalizedInstrument, tuning, remainingSegments[1]);
+
+    return {
+      instrument: normalizedInstrument,
+      tuning,
+      rootNote: DEFAULT_ROOT_NOTE,
+      ...normalizePatternSelection({
+        patterns,
+        patternType: 'chords',
+        selectedPattern: requestedChord,
+        selectedVoicingId: remainingSegments[2] ?? undefined,
+        instrument: normalizedInstrument,
+        tuning,
+      }),
+    };
+  }
+
   let availablePatterns = getPatternsForType(patterns, requestedType, normalizedInstrument, tuning);
 
   if (availablePatterns.length === 0) {
@@ -113,6 +267,7 @@ export function getUrlStateFromPath(pathname, patterns) {
       patterns,
       patternType: requestedType,
       selectedPattern: requestedPattern,
+      selectedVoicingId: undefined,
       instrument: normalizedInstrument,
       tuning,
     }),

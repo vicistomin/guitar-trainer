@@ -125,6 +125,13 @@
   line-height: 1.5;
 }
 
+.pattern-meta {
+  color: #d5e5f7;
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+}
+
 .pattern-intervals {
   color: #888;
   font-size: 13px;

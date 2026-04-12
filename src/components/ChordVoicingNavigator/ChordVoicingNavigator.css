@@ -1,0 +1,84 @@
+.chord-voicing-navigator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.chord-voicing-navigator-mobile {
+  justify-content: space-between;
+  background: rgba(42, 42, 42, 0.9);
+  border: 1px solid #3f4e63;
+  border-radius: 999px;
+  padding: 8px 12px;
+}
+
+.voicing-nav-button {
+  border: none;
+  border-radius: 999px;
+  background: #314154;
+  color: #f3f7fb;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.voicing-nav-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.voicing-progress {
+  color: #dce8f2;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.chord-voicing-navigator-desktop {
+  flex-wrap: wrap;
+}
+
+.voicing-chip {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: rgba(30, 30, 30, 0.72);
+  color: #eef4f8;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 9px 14px;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.voicing-chip:hover {
+  transform: translateY(-1px);
+}
+
+.voicing-chip.active {
+  border-color: currentColor;
+}
+
+.voicing-chip-blue {
+  color: #68b7ff;
+}
+
+.voicing-chip-gold {
+  color: #f7c85a;
+}
+
+.voicing-chip-mint {
+  color: #73e1c1;
+}
+
+.voicing-chip-rose {
+  color: #ff96a8;
+}
+
+@media (max-width: 768px) {
+  .chord-voicing-navigator {
+    margin-bottom: 12px;
+  }
+}
