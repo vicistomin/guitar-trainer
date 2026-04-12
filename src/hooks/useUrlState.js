@@ -1,16 +1,5 @@
 import { useEffect, useCallback, useRef } from 'react';
-import { instruments } from '../data/instruments';
-import { BASE_PATH, getUrlStateFromPath } from '../utils/patternState';
-
-// Convert pattern name to URL slug: "Minor Pentatonic" -> "minor-pentatonic"
-function toSlug(name) {
-  return name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-}
-
-// Convert note to URL-safe format: "C#" -> "c-sharp"
-function noteToSlug(note) {
-  return note.toLowerCase().replace('#', '-sharp');
-}
+import { buildPathFromState, getUrlStateFromPath } from '../utils/patternState';
 
 /**
  * Hook to sync app state with clean URL paths
@@ -30,6 +19,8 @@ export function useUrlState({
   setPatternType,
   selectedPattern,
   setSelectedPattern,
+  selectedVoicingId,
+  setSelectedVoicingId,
   patterns, // { scales, pentatonics, arpeggios }
 }) {
   const isInitialized = useRef(false);
@@ -45,21 +36,30 @@ export function useUrlState({
     setTuning(nextState.tuning);
     setPatternType(nextState.patternType);
     setSelectedPattern(nextState.selectedPattern);
+    setSelectedVoicingId(nextState.selectedVoicingId);
     setRootNote(nextState.rootNote);
-  }, [setInstrument, setTuning, setRootNote, setPatternType, setSelectedPattern, patterns]);
+  }, [
+    setInstrument,
+    setTuning,
+    setRootNote,
+    setPatternType,
+    setSelectedPattern,
+    setSelectedVoicingId,
+    patterns,
+  ]);
 
   // Build clean URL path
   const buildPath = useCallback(() => {
-    const patternSlug = selectedPattern ? toSlug(selectedPattern.name) : 'major';
-    const noteSlug = noteToSlug(rootNote);
-
-    // Only include tuning in URL when it differs from default
-    const instrumentConfig = instruments[instrument];
-    const isDefaultTuning = !instrumentConfig || tuning === instrumentConfig.defaultTuning;
-    const tuningSegment = isDefaultTuning ? '' : `/${tuning}`;
-
-    return `${BASE_PATH}/${instrument}${tuningSegment}/${patternType}/${patternSlug}/${noteSlug}`;
-  }, [instrument, tuning, patternType, selectedPattern, rootNote]);
+    return buildPathFromState({
+      patterns,
+      instrument,
+      tuning,
+      rootNote,
+      patternType,
+      selectedPattern,
+      selectedVoicingId,
+    });
+  }, [instrument, tuning, rootNote, patternType, selectedPattern, selectedVoicingId, patterns]);
 
   // Update URL when state changes
   useEffect(() => {

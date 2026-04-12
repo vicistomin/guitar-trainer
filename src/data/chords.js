@@ -14,6 +14,7 @@ function createChord({ id, name, family, category, description, voicings }) {
   return {
     id,
     name,
+    type: 'chord',
     family,
     category,
     description,

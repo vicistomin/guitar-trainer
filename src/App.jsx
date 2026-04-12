@@ -9,7 +9,7 @@ import { useUrlState } from './hooks/useUrlState';
 import { scales } from './data/scales';
 import { pentatonics } from './data/pentatonics';
 import { arpeggios } from './data/arpeggios';
-import { chords, getChordsForInstrument } from './data/chords';
+import { chords, getChordById, getChordVoicings, getChordsForInstrument } from './data/chords';
 import { getInstrumentWithTuning, DEFAULT_INSTRUMENT, instruments } from './data/instruments';
 import { NOTES } from './utils/musicTheory';
 import { generateFretboard, getPatternPositions, getUniqueNotesForPlayback } from './utils/fretboardUtils';
@@ -26,6 +26,7 @@ function App() {
   // Pattern selection state
   const [patternType, setPatternType] = useState('scales');
   const [selectedPattern, setSelectedPattern] = useState(scales[0]);
+  const [selectedVoicingId, setSelectedVoicingId] = useState(undefined);
   const [rootNote, setRootNote] = useState('C');
 
   // Display options
@@ -69,6 +70,7 @@ function App() {
       patterns,
       patternType,
       selectedPattern,
+      selectedVoicingId,
       instrument,
       tuning,
     });
@@ -80,7 +82,11 @@ function App() {
     if (normalizedState.selectedPattern?.id !== selectedPattern?.id) {
       setSelectedPattern(normalizedState.selectedPattern);
     }
-  }, [instrument, tuning, patternType, selectedPattern]);
+
+    if (normalizedState.selectedVoicingId !== selectedVoicingId) {
+      setSelectedVoicingId(normalizedState.selectedVoicingId);
+    }
+  }, [instrument, tuning, patternType, selectedPattern, selectedVoicingId]);
 
   // Generate fretboard data based on selected instrument and tuning
   const fretboard = useMemo(() => generateFretboard(instrument, tuning), [instrument, tuning]);
@@ -88,6 +94,41 @@ function App() {
 
   // Check if current pattern is a chord shape
   const isChordMode = selectedPattern?.type === 'chord';
+  const focusedChordVoicing = useMemo(() => {
+    if (!isChordMode || !selectedPattern) {
+      return null;
+    }
+
+    const availableVoicings = getChordVoicings(selectedPattern.id, instrument, tuning);
+
+    return (
+      availableVoicings.find((voicing) => voicing.id === selectedVoicingId) ??
+      availableVoicings[0] ??
+      null
+    );
+  }, [instrument, isChordMode, selectedPattern, selectedVoicingId, tuning]);
+  const selectedChordShape = useMemo(() => {
+    if (!isChordMode) {
+      return undefined;
+    }
+
+    return getChordsForInstrument(instrument, tuning).find((chord) => chord.id === focusedChordVoicing?.id);
+  }, [focusedChordVoicing?.id, instrument, isChordMode, tuning]);
+
+  const handleSelectedPatternChange = useCallback((nextPattern) => {
+    if (nextPattern?.type === 'chord' && nextPattern.canonicalId) {
+      const canonicalChord = getChordById(nextPattern.canonicalId);
+
+      if (canonicalChord) {
+        setSelectedPattern(canonicalChord);
+        setSelectedVoicingId(nextPattern.id);
+        return;
+      }
+    }
+
+    setSelectedPattern(nextPattern);
+    setSelectedVoicingId(undefined);
+  }, []);
 
   // Sync state with URL for shareable links
   useUrlState({
@@ -101,6 +142,8 @@ function App() {
     setPatternType,
     selectedPattern,
     setSelectedPattern,
+    selectedVoicingId,
+    setSelectedVoicingId,
     patterns,
   });
 
@@ -119,8 +162,10 @@ function App() {
     let playableNotes;
 
     if (selectedPattern.type === 'chord') {
+      if (!selectedChordShape) return;
+
       // For chords: extract notes from specific fret positions
-      playableNotes = selectedPattern.frets
+      playableNotes = selectedChordShape.frets
         .map((fret, stringIndex) => fret !== null ? fretboard[stringIndex][fret] : null)
         .filter(Boolean)
         .sort((a, b) => a.frequency - b.frequency);
@@ -147,7 +192,16 @@ function App() {
         trackPattern(selectedPattern.name, selectedPattern.type === 'chord' ? undefined : rootNote);
       }
     }
-  }, [selectedPattern, rootNote, fretboard, bpm, playSequence, isSessionActive, trackPattern]);
+  }, [
+    selectedChordShape,
+    selectedPattern,
+    rootNote,
+    fretboard,
+    bpm,
+    playSequence,
+    isSessionActive,
+    trackPattern,
+  ]);
 
   // Stop playback
   const handleStopPattern = useCallback(() => {
@@ -184,15 +238,21 @@ function App() {
     // Determine pattern type
     if (randomPattern.type === 'chord') {
       setPatternType('chords');
+      setSelectedPattern(getChordById(randomPattern.canonicalId) ?? randomPattern);
+      setSelectedVoicingId(randomPattern.id);
     } else if (scales.includes(randomPattern)) {
       setPatternType('scales');
+      setSelectedPattern(randomPattern);
+      setSelectedVoicingId(undefined);
     } else if (pentatonics.includes(randomPattern)) {
       setPatternType('pentatonics');
+      setSelectedPattern(randomPattern);
+      setSelectedVoicingId(undefined);
     } else {
       setPatternType('arpeggios');
+      setSelectedPattern(randomPattern);
+      setSelectedVoicingId(undefined);
     }
-
-    setSelectedPattern(randomPattern);
     setRootNote(randomNote);
   }, [instrument, tuning]);
 
@@ -217,7 +277,7 @@ function App() {
             tuning={tuning}
             rootNote={isChordMode ? undefined : rootNote}
             intervals={!isChordMode ? selectedPattern?.intervals : undefined}
-            chordShape={isChordMode ? selectedPattern : undefined}
+            chordShape={selectedChordShape}
             onNoteClick={handleNoteClick}
             showNoteNames={showNoteNames || isChordMode}
             showIntervals={!isChordMode && showIntervals}
@@ -249,8 +309,8 @@ function App() {
           <PatternSelector
             patternType={patternType}
             setPatternType={setPatternType}
-            selectedPattern={selectedPattern}
-            setSelectedPattern={setSelectedPattern}
+            selectedPattern={isChordMode ? selectedChordShape : selectedPattern}
+            setSelectedPattern={handleSelectedPatternChange}
             instrument={instrument}
             tuning={tuning}
           />

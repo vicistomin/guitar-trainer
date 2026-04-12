@@ -34,7 +34,7 @@ describe('App behavior', () => {
     vi.useRealTimers();
   });
 
-  test('falls back to Major Scale when a standard-only chord becomes invalid for the selected tuning', async () => {
+  test('falls back to the first valid chord when the selected chord has no voicing for the new tuning', async () => {
     renderApp();
 
     fireEvent.click(screen.getByRole('button', { name: 'Chords' }));
@@ -42,11 +42,11 @@ describe('App behavior', () => {
 
     fireEvent.change(screen.getByLabelText('Tuning'), { target: { value: 'dadgad' } });
 
-    expect(screen.getAllByText('Major Scale').length).toBeGreaterThan(0);
-    expect(screen.getByLabelText('Root Note')).toBeInTheDocument();
+    expect(screen.getAllByText('D9').length).toBeGreaterThan(0);
+    expect(screen.queryByLabelText('Root Note')).not.toBeInTheDocument();
   });
 
-  test('falls back to Major Scale when a chord becomes invalid for the selected instrument', async () => {
+  test('falls back to the first valid chord when the selected chord has no voicing for the new instrument', async () => {
     renderApp();
 
     fireEvent.click(screen.getByRole('button', { name: 'Chords' }));
@@ -55,18 +55,18 @@ describe('App behavior', () => {
     fireEvent.change(screen.getByLabelText('Instrument'), { target: { value: 'ukulele' } });
 
     expect(screen.getByRole('heading', { name: 'Ukulele Trainer' })).toBeInTheDocument();
-    expect(screen.getAllByText('Major Scale').length).toBeGreaterThan(0);
-    expect(screen.getByLabelText('Root Note')).toBeInTheDocument();
+    expect(screen.getAllByText('C').length).toBeGreaterThan(0);
+    expect(screen.queryByLabelText('Root Note')).not.toBeInTheDocument();
   });
 
-  test('normalizes invalid URL state back to a valid scale route', () => {
+  test('normalizes invalid chord URL state back to the first valid chord route', () => {
     renderApp('/guitar-trainer/ukulele/chords/not-a-pattern/c');
 
     vi.advanceTimersByTime(100);
 
-    expect(window.location.pathname).toBe('/guitar-trainer/ukulele/scales/major-scale/c');
-    expect(screen.queryByRole('button', { name: 'Chords' })).not.toBeInTheDocument();
-    expect(screen.getByLabelText('Root Note')).toBeInTheDocument();
+    expect(window.location.pathname).toBe('/guitar-trainer/ukulele/chords/c');
+    expect(screen.getByRole('button', { name: 'Chords' })).toBeInTheDocument();
+    expect(screen.queryByLabelText('Root Note')).not.toBeInTheDocument();
   });
 
   test('does not mark chord notes as scale roots', async () => {
