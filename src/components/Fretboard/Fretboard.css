@@ -105,6 +105,10 @@
   pointer-events: none;
 }
 
+.barre-indicator.focused {
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.18);
+}
+
 /* Individual fret */
 .fret {
   flex: 1;
@@ -156,6 +160,12 @@
   transition: transform 0.15s, box-shadow 0.15s;
 }
 
+.note-indicator-stack {
+  position: relative;
+  width: 34px;
+  height: 32px;
+}
+
 .note-indicator:hover {
   transform: scale(1.15);
   box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4);
@@ -165,6 +175,42 @@
   background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
   width: 28px;
   height: 28px;
+}
+
+.note-indicator.chord-voicing {
+  position: absolute;
+  top: 2px;
+  left: 4px;
+}
+
+.note-indicator.chord-voicing.secondary {
+  width: 20px;
+  height: 20px;
+  opacity: 0.85;
+}
+
+.note-indicator.chord-voicing.focused {
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.18), 0 2px 4px rgba(0, 0, 0, 0.35);
+}
+
+.note-indicator.chord-voicing-blue,
+.barre-indicator.chord-voicing-blue {
+  background: linear-gradient(135deg, #54b5ff 0%, #2d7fd4 100%);
+}
+
+.note-indicator.chord-voicing-gold,
+.barre-indicator.chord-voicing-gold {
+  background: linear-gradient(135deg, #ffd56a 0%, #d9a536 100%);
+}
+
+.note-indicator.chord-voicing-mint,
+.barre-indicator.chord-voicing-mint {
+  background: linear-gradient(135deg, #7ff2d0 0%, #3ebf9c 100%);
+}
+
+.note-indicator.chord-voicing-rose,
+.barre-indicator.chord-voicing-rose {
+  background: linear-gradient(135deg, #ff9ab0 0%, #d9587a 100%);
 }
 
 .note-text {

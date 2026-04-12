@@ -10,6 +10,7 @@ export function Fretboard({
   rootNote,
   intervals,
   chordShape,
+  chordShapes = [],
   onNoteClick,
   showNoteNames = true,
   showIntervals = false,
@@ -26,12 +27,24 @@ export function Fretboard({
     }
   };
 
+  const activeChordShapes = useMemo(
+    () => (chordShapes.length > 0 ? chordShapes : chordShape ? [chordShape] : []),
+    [chordShape, chordShapes],
+  );
+  const hasChordShapes = activeChordShapes.length > 0;
+
   const isNoteActive = (note, stringIndex, fretIndex) => {
-    if (chordShape) {
-      return chordShape.frets[stringIndex] === fretIndex;
+    if (hasChordShapes) {
+      return activeChordShapes.some((shape) => shape.frets[stringIndex] === fretIndex);
     }
     if (!rootNote || !intervals) return false;
     return isNoteInPattern(note, rootNote, intervals);
+  };
+
+  const getActiveShapesForPosition = (stringIndex, fretIndex) => {
+    return activeChordShapes
+      .filter((shape) => shape.frets[stringIndex] === fretIndex)
+      .sort((left, right) => Number(left.isFocused) - Number(right.isFocused));
   };
 
   const isRoot = (note) => {
@@ -47,7 +60,7 @@ export function Fretboard({
 
   // For chord shapes: determine string status (muted, open, or fretted)
   const getStringStatus = (stringIndex) => {
-    if (!chordShape) return null;
+    if (!chordShape || activeChordShapes.length !== 1) return null;
     const fret = chordShape.frets[stringIndex];
     if (fret === null) return 'muted';
     if (fret === 0) return 'open';
@@ -56,9 +69,15 @@ export function Fretboard({
 
   // Calculate barre positions for rendering
   const barreElements = useMemo(() => {
-    if (!chordShape || !chordShape.barres || chordShape.barres.length === 0) return [];
-    return chordShape.barres;
-  }, [chordShape]);
+    return activeChordShapes.flatMap((shape) =>
+      (shape.barres ?? []).map((barre, index) => ({
+        ...barre,
+        key: `${shape.id}-${index}`,
+        colorToken: shape.colorToken,
+        isFocused: shape.isFocused,
+      })),
+    );
+  }, [activeChordShapes]);
 
   return (
     <div className="fretboard-container">
@@ -90,7 +109,7 @@ export function Fretboard({
         </div>
 
         {/* Barre indicators */}
-        {barreElements.map((barre, idx) => {
+        {barreElements.map((barre) => {
           const topStringDisplay = numStrings - 1 - barre.toString;
           const bottomStringDisplay = numStrings - 1 - barre.fromString;
           const stringSpan = bottomStringDisplay - topStringDisplay;
@@ -98,8 +117,8 @@ export function Fretboard({
           const fretPercent = ((barre.fret - 0.5) / numFrets) * 100;
           return (
             <div
-              key={idx}
-              className="barre-indicator"
+              key={barre.key}
+              className={`barre-indicator ${barre.colorToken ? `chord-voicing-${barre.colorToken}` : ''} ${barre.isFocused ? 'focused' : ''}`}
               style={{
                 top: `calc(${30 + topStringDisplay * 28}px)`,
                 height: `${stringSpan * 28}px`,
@@ -125,7 +144,8 @@ export function Fretboard({
                 {/* Frets */}
                 {string.map((fretData, fretIndex) => {
                   const active = isNoteActive(fretData.note, stringIndex, fretIndex);
-                  const root = isRoot(fretData.note);
+                  const root = !hasChordShapes && isRoot(fretData.note);
+                  const activeShapes = getActiveShapesForPosition(stringIndex, fretIndex);
 
                   return (
                     <div
@@ -143,14 +163,39 @@ export function Fretboard({
 
                       {/* Note indicator */}
                       {active && (
-                        <div
-                          className={`note-indicator ${root && highlightRoot ? 'root' : ''}`}
-                          title={`${fretData.note}${fretData.octave}`}
-                        >
-                          {(showNoteNames || showIntervals) && (
-                            <span className="note-text">{getDisplayText(fretData.note)}</span>
-                          )}
-                        </div>
+                        hasChordShapes ? (
+                          <div className={`note-indicator-stack ${activeShapes.length > 1 ? 'multi' : ''}`}>
+                            {activeShapes.map((shape, shapeIndex) => {
+                              const showLabel = activeChordShapes.length === 1 || shape.isFocused;
+
+                              return (
+                                <div
+                                  key={shape.id}
+                                  className={`note-indicator chord-voicing ${shape.colorToken ? `chord-voicing-${shape.colorToken}` : ''} ${shape.isFocused ? 'focused' : 'secondary'}`}
+                                  title={`${shape.name} ${shape.label}: ${fretData.note}${fretData.octave}`}
+                                  style={
+                                    shape.isFocused
+                                      ? undefined
+                                      : { transform: `translate(${(shapeIndex + 1) * 6}px, ${-shapeIndex * 4}px)` }
+                                  }
+                                >
+                                  {showLabel && (showNoteNames || showIntervals) && (
+                                    <span className="note-text">{getDisplayText(fretData.note)}</span>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div
+                            className={`note-indicator ${root && highlightRoot ? 'root' : ''}`}
+                            title={`${fretData.note}${fretData.octave}`}
+                          >
+                            {(showNoteNames || showIntervals) && (
+                              <span className="note-text">{getDisplayText(fretData.note)}</span>
+                            )}
+                          </div>
+                        )
                       )}
                     </div>
                   );

@@ -3,6 +3,7 @@ import { Fretboard } from './components/Fretboard/Fretboard';
 import { Controls } from './components/Controls/Controls';
 import { PatternSelector } from './components/PatternSelector/PatternSelector';
 import { ProgressTracker } from './components/ProgressTracker/ProgressTracker';
+import { ChordVoicingNavigator } from './components/ChordVoicingNavigator/ChordVoicingNavigator';
 import { useAudio } from './hooks/useAudio';
 import { useProgress } from './hooks/useProgress';
 import { useUrlState } from './hooks/useUrlState';
@@ -17,6 +18,26 @@ import { normalizePatternSelection } from './utils/patternState';
 
 // Pattern collections for URL state
 const patterns = { scales, pentatonics, arpeggios, chords };
+const MOBILE_BREAKPOINT = 768;
+const MAX_DESKTOP_VOICINGS = 4;
+const VOICING_COLOR_TOKENS = ['blue', 'gold', 'mint', 'rose'];
+
+function getVisibleVoicings(voicings, focusedVoicingId) {
+  if (voicings.length <= MAX_DESKTOP_VOICINGS) {
+    return voicings;
+  }
+
+  const focusedIndex = Math.max(
+    voicings.findIndex((voicing) => voicing.id === focusedVoicingId),
+    0,
+  );
+  const start = Math.min(
+    Math.max(focusedIndex - Math.floor(MAX_DESKTOP_VOICINGS / 2), 0),
+    voicings.length - MAX_DESKTOP_VOICINGS,
+  );
+
+  return voicings.slice(start, start + MAX_DESKTOP_VOICINGS);
+}
 
 function App() {
   // Instrument selection
@@ -32,6 +53,7 @@ function App() {
   // Display options
   const [showNoteNames, setShowNoteNames] = useState(true);
   const [showIntervals, setShowIntervals] = useState(false);
+  const [isDesktopChordView, setIsDesktopChordView] = useState(() => window.innerWidth > MOBILE_BREAKPOINT);
 
   // Playback state
   const [bpm, setBpm] = useState(120);
@@ -94,26 +116,65 @@ function App() {
 
   // Check if current pattern is a chord shape
   const isChordMode = selectedPattern?.type === 'chord';
-  const focusedChordVoicing = useMemo(() => {
+  const chordVoicingOptions = useMemo(() => {
     if (!isChordMode || !selectedPattern) {
+      return [];
+    }
+
+    return getChordVoicings(selectedPattern.id, instrument, tuning).map((voicing, index) => ({
+      ...voicing,
+      colorToken: VOICING_COLOR_TOKENS[index % VOICING_COLOR_TOKENS.length],
+    }));
+  }, [instrument, isChordMode, selectedPattern, tuning]);
+  const focusedChordVoicing = useMemo(() => {
+    if (chordVoicingOptions.length === 0) {
       return null;
     }
 
-    const availableVoicings = getChordVoicings(selectedPattern.id, instrument, tuning);
-
     return (
-      availableVoicings.find((voicing) => voicing.id === selectedVoicingId) ??
-      availableVoicings[0] ??
+      chordVoicingOptions.find((voicing) => voicing.id === selectedVoicingId) ??
+      chordVoicingOptions[0] ??
       null
     );
-  }, [instrument, isChordMode, selectedPattern, selectedVoicingId, tuning]);
+  }, [chordVoicingOptions, selectedVoicingId]);
+  const displayedChordVoicings = useMemo(() => {
+    if (!focusedChordVoicing) {
+      return [];
+    }
+
+    if (!isDesktopChordView) {
+      return [{ ...focusedChordVoicing, isFocused: true }];
+    }
+
+    return getVisibleVoicings(chordVoicingOptions, focusedChordVoicing.id).map((voicing) => ({
+      ...voicing,
+      isFocused: voicing.id === focusedChordVoicing.id,
+    }));
+  }, [chordVoicingOptions, focusedChordVoicing, isDesktopChordView]);
   const selectedChordShape = useMemo(() => {
-    if (!isChordMode) {
+    if (!focusedChordVoicing || !selectedPattern) {
       return undefined;
     }
 
-    return getChordsForInstrument(instrument, tuning).find((chord) => chord.id === focusedChordVoicing?.id);
-  }, [focusedChordVoicing?.id, instrument, isChordMode, tuning]);
+    return {
+      ...focusedChordVoicing,
+      canonicalId: selectedPattern.id,
+      name: selectedPattern.name,
+      type: 'chord',
+    };
+  }, [focusedChordVoicing, selectedPattern]);
+  const displayedChordShapes = useMemo(() => {
+    if (!selectedPattern) {
+      return [];
+    }
+
+    return displayedChordVoicings.map((voicing) => ({
+      ...voicing,
+      canonicalId: selectedPattern.id,
+      name: selectedPattern.name,
+      type: 'chord',
+    }));
+  }, [displayedChordVoicings, selectedPattern]);
 
   const handleSelectedPatternChange = useCallback((nextPattern) => {
     if (nextPattern?.type === 'chord' && nextPattern.canonicalId) {
@@ -128,6 +189,9 @@ function App() {
 
     setSelectedPattern(nextPattern);
     setSelectedVoicingId(undefined);
+  }, []);
+  const handleSelectChordVoicing = useCallback((voicingId) => {
+    setSelectedVoicingId(voicingId);
   }, []);
 
   // Sync state with URL for shareable links
@@ -221,6 +285,18 @@ function App() {
     };
   }, []);
 
+  useEffect(() => {
+    const handleResize = () => {
+      setIsDesktopChordView(window.innerWidth > MOBILE_BREAKPOINT);
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
   // Randomize pattern and key
   const handleRandomize = useCallback(() => {
     // Get all interval-based patterns
@@ -271,6 +347,15 @@ function App() {
             <span className="pattern-name">{selectedPattern?.name || 'Select a pattern'}</span>
           </div>
 
+          {isChordMode && chordVoicingOptions.length > 1 && (
+            <ChordVoicingNavigator
+              voicings={chordVoicingOptions}
+              selectedVoicingId={focusedChordVoicing?.id}
+              onSelectVoicing={handleSelectChordVoicing}
+              isDesktop={isDesktopChordView}
+            />
+          )}
+
           {/* Fretboard */}
           <Fretboard
             instrument={instrument}
@@ -278,6 +363,7 @@ function App() {
             rootNote={isChordMode ? undefined : rootNote}
             intervals={!isChordMode ? selectedPattern?.intervals : undefined}
             chordShape={selectedChordShape}
+            chordShapes={displayedChordShapes}
             onNoteClick={handleNoteClick}
             showNoteNames={showNoteNames || isChordMode}
             showIntervals={!isChordMode && showIntervals}

@@ -13,6 +13,11 @@ vi.mock('./hooks/useAudio', () => ({
 
 import App from './App';
 
+function setViewportWidth(width) {
+  window.innerWidth = width;
+  window.dispatchEvent(new Event('resize'));
+}
+
 function renderApp(pathname = '/guitar-trainer/') {
   window.history.replaceState({}, '', pathname);
   localStorage.setItem('guitar-trainer-settings', JSON.stringify({ autoStartEnabled: false }));
@@ -25,6 +30,7 @@ function renderApp(pathname = '/guitar-trainer/') {
 describe('App behavior', () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    setViewportWidth(1280);
     audioMocks.playNote.mockReset();
     audioMocks.playSequence.mockReset();
     audioMocks.stopAll.mockReset();
@@ -89,6 +95,38 @@ describe('App behavior', () => {
     expect(screen.getAllByText('Cmaj7').length).toBeGreaterThan(0);
     expect(screen.getByText('Voicing: Drone')).toBeInTheDocument();
     expect(window.location.pathname).toBe('/guitar-trainer/guitar/dropd/chords/cmaj7');
+  });
+
+  test('mobile chord mode shows one voicing at a time with navigation controls', async () => {
+    setViewportWidth(390);
+    renderApp('/guitar-trainer/guitar/chords/cmaj7/cmaj7-guitar-standard-open');
+
+    expect(screen.getByText('1 of 2')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Next Position' }));
+    vi.advanceTimersByTime(100);
+
+    expect(screen.getByText('2 of 2')).toBeInTheDocument();
+    expect(screen.getByText('Voicing: Shell')).toBeInTheDocument();
+    expect(window.location.pathname).toBe('/guitar-trainer/guitar/chords/cmaj7/cmaj7-guitar-standard-shell');
+  });
+
+  test('desktop chord mode renders multiple voicings of the same chord with distinct styling', async () => {
+    const { container } = renderApp('/guitar-trainer/guitar/chords/cmaj7/cmaj7-guitar-standard-open');
+
+    expect(screen.getByRole('button', { name: 'Open' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Shell' })).toBeInTheDocument();
+    expect(container.querySelector('.note-indicator.chord-voicing-blue')).toBeInTheDocument();
+    expect(container.querySelector('.note-indicator.chord-voicing-gold')).toBeInTheDocument();
+  });
+
+  test('desktop playback uses the focused voicing only', async () => {
+    renderApp('/guitar-trainer/guitar/chords/am7/am7-guitar-standard-barre');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Play' }));
+
+    expect(audioMocks.playSequence).toHaveBeenCalledTimes(1);
+    expect(audioMocks.playSequence.mock.calls[0][0]).toHaveLength(6);
   });
 
   test('normalizes invalid chord URL state back to the first valid chord route', () => {
