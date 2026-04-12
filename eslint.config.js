@@ -6,7 +6,21 @@ import reactRefresh from 'eslint-plugin-react-refresh';
 
 export default [
   {
-    ignores: ['dist/**', 'node_modules/**', 'coverage/**'],
+    ignores: [
+      '.context/**',
+      'coverage/**',
+      'dist/**',
+      'node_modules/**',
+      'playwright-report/**',
+      'test-results/**',
+    ],
+  },
+  {
+    settings: {
+      react: {
+        version: 'detect',
+      },
+    },
   },
   js.configs.recommended,
   reactPlugin.configs.flat.recommended,
@@ -14,11 +28,6 @@ export default [
   reactHooks.configs.flat.recommended,
   {
     files: ['**/*.{js,jsx}'],
-    settings: {
-      react: {
-        version: 'detect',
-      },
-    },
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
@@ -43,6 +52,15 @@ export default [
   },
   {
     files: ['**/*.test.{js,jsx}', 'src/test/**/*.js'],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+      },
+    },
+  },
+  {
+    files: ['playwright/**/*.js'],
     languageOptions: {
       globals: {
         ...globals.browser,
