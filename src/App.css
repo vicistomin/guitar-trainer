@@ -15,6 +15,7 @@ body {
 
 /* App container */
 .app {
+  width: 100%;
   max-width: 1400px;
   margin: 0 auto;
   padding: 20px;
@@ -46,14 +47,16 @@ body {
 /* Main layout */
 .app-main {
   display: grid;
-  grid-template-columns: 1fr 350px;
-  gap: 30px;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 320px);
+  gap: 24px;
+  align-items: start;
 }
 
 .main-content {
   display: flex;
   flex-direction: column;
   gap: 25px;
+  min-width: 0;
 }
 
 /* Current pattern display */
@@ -90,12 +93,13 @@ body {
   position: sticky;
   top: 20px;
   align-self: start;
+  min-width: 0;
 }
 
 /* Responsive design */
-@media (max-width: 1200px) {
+@media (max-width: 1320px) {
   .app-main {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .sidebar {
